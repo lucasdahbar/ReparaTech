@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { atualizarCliente, cadastrarCliente, listarClientes, removerCliente } from '../lib/api';
-import type { Cliente, ClienteFormulario } from '../types';
+import { atualizarCliente, cadastrarAparelho, cadastrarCliente, listarAparelhos, listarClientes, removerCliente } from '../lib/api';
+import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario } from '../types';
 
 const formularioInicial: ClienteFormulario = {
   nome: '',
@@ -9,6 +9,15 @@ const formularioInicial: ClienteFormulario = {
   telefone: '',
   email: '',
   endereco: ''
+};
+
+const formularioAparelhoInicial: AparelhoFormulario = {
+  clienteId: '',
+  marca: '',
+  modelo: '',
+  numeroSerie: '',
+  imei: '',
+  defeitoRelatado: ''
 };
 
 function formatarData(dataISO: string) {
@@ -20,10 +29,14 @@ function formatarData(dataISO: string) {
 
 export function AtendentePage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [aparelhos, setAparelhos] = useState<Aparelho[]>([]);
   const [formulario, setFormulario] = useState<ClienteFormulario>(formularioInicial);
+  const [formularioAparelho, setFormularioAparelho] = useState<AparelhoFormulario>(formularioAparelhoInicial);
   const [clienteSelecionadoId, setClienteSelecionadoId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [carregandoAparelhos, setCarregandoAparelhos] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [salvandoAparelho, setSalvandoAparelho] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -41,8 +54,22 @@ export function AtendentePage() {
     }
   };
 
+  const carregarAparelhos = async () => {
+    setCarregandoAparelhos(true);
+
+    try {
+      const resposta = await listarAparelhos();
+      setAparelhos(resposta.aparelhos);
+    } catch {
+      setAparelhos([]);
+    } finally {
+      setCarregandoAparelhos(false);
+    }
+  };
+
   useEffect(() => {
     void carregarClientes();
+    void carregarAparelhos();
   }, []);
 
   const estatisticas = useMemo(() => {
@@ -56,6 +83,10 @@ export function AtendentePage() {
   const limparFormulario = () => {
     setFormulario(formularioInicial);
     setClienteSelecionadoId(null);
+  };
+
+  const limparFormularioAparelho = () => {
+    setFormularioAparelho(formularioAparelhoInicial);
   };
 
   const manipularEnvio = async (evento: FormEvent<HTMLFormElement>) => {
@@ -119,6 +150,28 @@ export function AtendentePage() {
       setSalvando(false);
     }
   };
+
+  const manipularEnvioAparelho = async (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    setSalvandoAparelho(true);
+    setMensagem(null);
+    setErro(null);
+
+    try {
+      await cadastrarAparelho(formularioAparelho);
+      setMensagem('Aparelho vinculado ao cliente com sucesso.');
+      limparFormularioAparelho();
+      await carregarAparelhos();
+    } catch (erroAparelho) {
+      setErro(erroAparelho instanceof Error ? erroAparelho.message : 'Não foi possível cadastrar o aparelho.');
+    } finally {
+      setSalvandoAparelho(false);
+    }
+  };
+
+  const aparelhosDoClienteSelecionado = clienteSelecionadoId
+    ? aparelhos.filter((aparelho) => aparelho.clienteId === clienteSelecionadoId)
+    : aparelhos;
 
   return (
     <div className="page-stack">
@@ -279,6 +332,141 @@ export function AtendentePage() {
                   ))}
                 </tbody>
               </table>
+
+              <section className="two-column-grid">
+                <form className="panel-card form-card" onSubmit={manipularEnvioAparelho}>
+                  <div className="section-heading">
+                    <div>
+                      <span className="eyebrow">Aparelhos</span>
+                      <h3>Vincular equipamento ao cliente</h3>
+                    </div>
+                    <button type="button" className="button-secondary" onClick={limparFormularioAparelho}>
+                      Limpar
+                    </button>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="full-width">
+                      <span>Cliente *</span>
+                      <select
+                        value={formularioAparelho.clienteId}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, clienteId: evento.target.value }))}
+                        required
+                      >
+                        <option value="">Selecione um cliente</option>
+                        {clientes.map((cliente) => (
+                          <option key={cliente.id} value={cliente.id}>
+                            {cliente.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>Marca *</span>
+                      <input
+                        value={formularioAparelho.marca}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, marca: evento.target.value }))}
+                        placeholder="Marca do equipamento"
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>Modelo *</span>
+                      <input
+                        value={formularioAparelho.modelo}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, modelo: evento.target.value }))}
+                        placeholder="Modelo do equipamento"
+                        required
+                      />
+                    </label>
+
+                    <label>
+                      <span>Número de série</span>
+                      <input
+                        value={formularioAparelho.numeroSerie}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, numeroSerie: evento.target.value }))}
+                        placeholder="Serial"
+                      />
+                    </label>
+
+                    <label>
+                      <span>IMEI</span>
+                      <input
+                        value={formularioAparelho.imei}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, imei: evento.target.value }))}
+                        placeholder="IMEI"
+                      />
+                    </label>
+
+                    <label className="full-width">
+                      <span>Defeito relatado</span>
+                      <textarea
+                        value={formularioAparelho.defeitoRelatado}
+                        onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, defeitoRelatado: evento.target.value }))}
+                        placeholder="Descreva o problema informado pelo cliente"
+                        rows={4}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-actions">
+                    <button type="submit" className="button-primary" disabled={salvandoAparelho}>
+                      {salvandoAparelho ? 'Salvando...' : 'Vincular aparelho'}
+                    </button>
+                    <span className="helper-text">O aparelho fica amarrado ao cliente selecionado e já entra no inventário.</span>
+                  </div>
+                </form>
+
+                <section className="panel-card list-card">
+                  <div className="section-heading">
+                    <div>
+                      <span className="eyebrow">Inventário vinculado</span>
+                      <h3>{clienteSelecionadoId ? 'Aparelhos do cliente selecionado' : 'Todos os aparelhos cadastrados'}</h3>
+                    </div>
+                    <button type="button" className="button-secondary" onClick={() => void carregarAparelhos()}>
+                      Recarregar
+                    </button>
+                  </div>
+
+                  {carregandoAparelhos ? (
+                    <div className="empty-state">Carregando aparelhos...</div>
+                  ) : aparelhosDoClienteSelecionado.length === 0 ? (
+                    <div className="empty-state">Nenhum aparelho vinculado ainda.</div>
+                  ) : (
+                    <div className="table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Cliente</th>
+                            <th>Aparelho</th>
+                            <th>Identificação</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {aparelhosDoClienteSelecionado.map((aparelho) => (
+                            <tr key={aparelho.id}>
+                              <td>
+                                <strong>{aparelho.cliente.nome}</strong>
+                                <small>{aparelho.cliente.email ?? 'Sem e-mail'}</small>
+                              </td>
+                              <td>
+                                <strong>{`${aparelho.marca} ${aparelho.modelo}`}</strong>
+                                <small>{aparelho.defeitoRelatado ?? 'Sem defeito relatado'}</small>
+                              </td>
+                              <td>
+                                <strong>{aparelho.numeroSerie ?? 'Sem serial'}</strong>
+                                <small>{aparelho.imei ?? 'Sem IMEI'}</small>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </section>
             </div>
           )}
         </section>

@@ -1,4 +1,4 @@
-import type { Cliente, ClienteFormulario } from '../types';
+import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
@@ -12,6 +12,14 @@ type RespostaCliente = {
 
 type RespostaMensagem = {
   mensagem: string;
+};
+
+type RespostaListaAparelhos = {
+  aparelhos: Aparelho[];
+};
+
+type RespostaAparelho = {
+  aparelho: Aparelho;
 };
 
 async function requisicao<T>(caminho: string, options: RequestInit = {}): Promise<T> {
@@ -53,5 +61,16 @@ export async function atualizarCliente(id: string, cliente: ClienteFormulario) {
 export async function removerCliente(id: string) {
   return requisicao<RespostaMensagem>(`/clientes/${id}`, {
     method: 'DELETE'
+  });
+}
+
+export async function listarAparelhos() {
+  return requisicao<RespostaListaAparelhos>('/aparelhos');
+}
+
+export async function cadastrarAparelho(aparelho: AparelhoFormulario) {
+  return requisicao<RespostaAparelho & RespostaMensagem>('/aparelhos', {
+    method: 'POST',
+    body: JSON.stringify(aparelho)
   });
 }

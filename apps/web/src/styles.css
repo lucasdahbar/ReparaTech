@@ -40,6 +40,22 @@ textarea {
   font: inherit;
 }
 
+select {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px 16px;
+  color: var(--texto);
+  background: rgba(4, 8, 16, 0.54);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+select:focus {
+  border-color: rgba(94, 234, 212, 0.75);
+  box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.12);
+}
+
 button {
   cursor: pointer;
 }

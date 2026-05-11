@@ -17,6 +17,28 @@ export type ClienteFormulario = {
   endereco: string;
 };
 
+export type Aparelho = {
+  id: string;
+  clienteId: string;
+  cliente: Cliente;
+  marca: string;
+  modelo: string;
+  numeroSerie: string | null;
+  imei: string | null;
+  defeitoRelatado: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AparelhoFormulario = {
+  clienteId: string;
+  marca: string;
+  modelo: string;
+  numeroSerie: string;
+  imei: string;
+  defeitoRelatado: string;
+};
+
 export const statusOrdemServico = [
   'Aberta',
   'Em Orçamento',
