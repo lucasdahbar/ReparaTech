@@ -5,9 +5,18 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm run dev --workspace repairatech-api\" \"npm run dev --workspace repairatech-web\"",
     "dev:api": "npm run dev --workspace repairatech-api",
+    "dev:web": "npm run dev --workspace repairatech-web",
+    "build": "npm run build --workspace repairatech-api && npm run build --workspace repairatech-web",
     "build:api": "npm run build --workspace repairatech-api",
+    "build:web": "npm run build --workspace repairatech-web",
+    "typecheck": "npm run typecheck --workspace repairatech-api && npm run typecheck --workspace repairatech-web",
     "typecheck:api": "npm run typecheck --workspace repairatech-api",
+    "typecheck:web": "npm run typecheck --workspace repairatech-web",
     "prisma:generate": "npm run prisma:generate --workspace repairatech-api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }
