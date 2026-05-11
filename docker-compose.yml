@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: repairatech-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: repairatech
+      MYSQL_USER: repairatech
+      MYSQL_PASSWORD: repairatech
+    ports:
+      - "3306:3306"
+    volumes:
+      - repairatech_mysql_data:/var/lib/mysql
+
+volumes:
+  repairatech_mysql_data:

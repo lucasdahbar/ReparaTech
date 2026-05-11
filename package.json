@@ -1,0 +1,13 @@
+{
+  "name": "repairatech",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace repairatech-api",
+    "build:api": "npm run build --workspace repairatech-api",
+    "typecheck:api": "npm run typecheck --workspace repairatech-api",
+    "prisma:generate": "npm run prisma:generate --workspace repairatech-api"
+  }
+}
