@@ -3,6 +3,14 @@ import { Prisma } from '@prisma/client';
 
 import { ApiError } from '../shared/api-error';
 
+const isPrismaDatabaseUnavailableError = (error: unknown) => {
+  return (
+    error instanceof Error &&
+    (error.name === 'PrismaClientInitializationError' ||
+      error.message.includes("Can't reach database server"))
+  );
+};
+
 export const notFoundHandler: RequestHandler = (_req, res) => {
   res.status(404).json({ mensagem: 'Rota não encontrada.' });
 };
@@ -12,6 +20,12 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     return res.status(error.statusCode).json({
       mensagem: error.message,
       detalhes: error.detalhes
+    });
+  }
+
+  if (isPrismaDatabaseUnavailableError(error)) {
+    return res.status(503).json({
+      mensagem: 'Banco de dados MySQL indisponível. Inicie o MySQL local ou ajuste o DATABASE_URL.'
     });
   }
 
