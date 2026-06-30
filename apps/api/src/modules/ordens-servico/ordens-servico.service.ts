@@ -237,7 +237,7 @@ export const vincularPecaNaOrdemServico = async (ordemId: string, dados: unknown
   }
 
   if (peca.quantidade < resultado.data.quantidade) {
-    throw new ApiError(409, 'Estoque insuficiente para vincular essa quantidade de peças.');
+    throw new ApiError(409, 'Estoque insuficiente para a peça selecionada.');
   }
 
   const valorUnitario = resultado.data.valorUnitario !== undefined
@@ -277,9 +277,12 @@ export const vincularPecaNaOrdemServico = async (ordemId: string, dados: unknown
       });
     }
 
-    await transacao.pecaEstoque.update({
+    const baixaEstoque = await transacao.pecaEstoque.updateMany({
       where: {
-        id: peca.id
+        id: peca.id,
+        quantidade: {
+          gte: resultado.data.quantidade
+        }
       },
       data: {
         quantidade: {
@@ -287,6 +290,10 @@ export const vincularPecaNaOrdemServico = async (ordemId: string, dados: unknown
         }
       }
     });
+
+    if (baixaEstoque.count === 0) {
+      throw new ApiError(409, 'Estoque insuficiente para a peça selecionada.');
+    }
 
     await transacao.movimentoEstoque.create({
       data: {
