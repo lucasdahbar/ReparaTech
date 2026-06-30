@@ -1,13 +1,4 @@
-import type {
-  Aparelho,
-  AparelhoFormulario,
-  Cliente,
-  ClienteFormulario,
-  ConsultaStatusResultado,
-  OrdemServico,
-  Peca,
-  PecaFormulario
-} from '../types';
+import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, ConsultaStatusResultado, OrdemServico, OrdemServicoFormulario } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
@@ -27,20 +18,12 @@ type RespostaListaAparelhos = {
   aparelhos: Aparelho[];
 };
 
-type RespostaAparelho = {
-  aparelho: Aparelho;
-};
-
-type RespostaListaPecas = {
-  pecas: Peca[];
-};
-
-type RespostaPeca = {
-  peca: Peca;
-};
-
 type RespostaListaOrdensServico = {
   ordens: OrdemServico[];
+};
+
+type RespostaAparelho = {
+  aparelho: Aparelho;
 };
 
 type RespostaOrdemServico = {
@@ -98,6 +81,17 @@ export async function cadastrarAparelho(aparelho: AparelhoFormulario) {
     method: 'POST',
     body: JSON.stringify(aparelho)
   });
+}
+
+export async function cadastrarOrdemServico(ordem: OrdemServicoFormulario) {
+  return requisicao<RespostaOrdemServico & RespostaMensagem>('/ordens-servico', {
+    method: 'POST',
+    body: JSON.stringify(ordem)
+  });
+}
+
+export async function listarOrdensServico() {
+  return requisicao<RespostaListaOrdensServico>('/ordens-servico');
 }
 
 export async function consultarStatusPublico(protocolo: string, cpf: string) {

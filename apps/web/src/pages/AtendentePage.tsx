@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { atualizarCliente, cadastrarAparelho, cadastrarCliente, listarAparelhos, listarClientes, removerCliente } from '../lib/api';
-import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario } from '../types';
+import { atualizarCliente, cadastrarAparelho, cadastrarCliente, cadastrarOrdemServico, listarAparelhos, listarClientes, listarOrdensServico, removerCliente } from '../lib/api';
+import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, OrdemServico, OrdemServicoFormulario } from '../types';
 
 const formularioInicial: ClienteFormulario = {
   nome: '',
@@ -20,6 +20,12 @@ const formularioAparelhoInicial: AparelhoFormulario = {
   defeitoRelatado: ''
 };
 
+const formularioOrdemServicoInicial: OrdemServicoFormulario = {
+  clienteId: '',
+  aparelhoId: '',
+  descricaoEntrada: ''
+};
+
 function formatarData(dataISO: string) {
   return new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'medium',
@@ -27,16 +33,34 @@ function formatarData(dataISO: string) {
   }).format(new Date(dataISO));
 }
 
+function formatarStatusOrdem(status: string) {
+  const statusFormatado: Record<string, string> = {
+    ABERTA: 'Aberta',
+    EM_ORCAMENTO: 'Em Orçamento',
+    AGUARDANDO_PECAS: 'Aguardando Peças',
+    EM_MANUTENCAO: 'Em Manutenção',
+    PRONTA_PARA_RETIRADA: 'Pronta',
+    FINALIZADA: 'Entregue'
+  };
+
+  return statusFormatado[status] ?? status;
+}
+
 export function AtendentePage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [aparelhos, setAparelhos] = useState<Aparelho[]>([]);
+  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
   const [formulario, setFormulario] = useState<ClienteFormulario>(formularioInicial);
   const [formularioAparelho, setFormularioAparelho] = useState<AparelhoFormulario>(formularioAparelhoInicial);
+  const [formularioOrdemServico, setFormularioOrdemServico] = useState<OrdemServicoFormulario>(formularioOrdemServicoInicial);
   const [clienteSelecionadoId, setClienteSelecionadoId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [carregandoAparelhos, setCarregandoAparelhos] = useState(true);
+  const [carregandoOrdensServico, setCarregandoOrdensServico] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [salvandoAparelho, setSalvandoAparelho] = useState(false);
+  const [salvandoOrdemServico, setSalvandoOrdemServico] = useState(false);
+  const [protocoloOrdemServico, setProtocoloOrdemServico] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -67,9 +91,23 @@ export function AtendentePage() {
     }
   };
 
+  const carregarOrdensServico = async () => {
+    setCarregandoOrdensServico(true);
+
+    try {
+      const resposta = await listarOrdensServico();
+      setOrdensServico(resposta.ordens);
+    } catch {
+      setOrdensServico([]);
+    } finally {
+      setCarregandoOrdensServico(false);
+    }
+  };
+
   useEffect(() => {
     void carregarClientes();
     void carregarAparelhos();
+    void carregarOrdensServico();
   }, []);
 
   const estatisticas = useMemo(() => {
@@ -87,6 +125,11 @@ export function AtendentePage() {
 
   const limparFormularioAparelho = () => {
     setFormularioAparelho(formularioAparelhoInicial);
+  };
+
+  const limparFormularioOrdemServico = () => {
+    setFormularioOrdemServico(formularioOrdemServicoInicial);
+    setProtocoloOrdemServico(null);
   };
 
   const manipularEnvio = async (evento: FormEvent<HTMLFormElement>) => {
@@ -172,6 +215,30 @@ export function AtendentePage() {
   const aparelhosDoClienteSelecionado = clienteSelecionadoId
     ? aparelhos.filter((aparelho) => aparelho.clienteId === clienteSelecionadoId)
     : aparelhos;
+
+  const aparelhosDisponiveisParaOs = formularioOrdemServico.clienteId
+    ? aparelhos.filter((aparelho) => aparelho.clienteId === formularioOrdemServico.clienteId)
+    : [];
+
+  const manipularEnvioOrdemServico = async (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    setSalvandoOrdemServico(true);
+    setMensagem(null);
+    setErro(null);
+    setProtocoloOrdemServico(null);
+
+    try {
+      const resposta = await cadastrarOrdemServico(formularioOrdemServico);
+      setMensagem('Ordem de Serviço aberta com sucesso.');
+      setProtocoloOrdemServico(resposta.ordem.numero);
+      setFormularioOrdemServico(formularioOrdemServicoInicial);
+      await carregarOrdensServico();
+    } catch (erroOrdemServico) {
+      setErro(erroOrdemServico instanceof Error ? erroOrdemServico.message : 'Não foi possível abrir a ordem de serviço.');
+    } finally {
+      setSalvandoOrdemServico(false);
+    }
+  };
 
   return (
     <div className="page-stack">
@@ -332,6 +399,152 @@ export function AtendentePage() {
                   ))}
                 </tbody>
               </table>
+
+              <section className="two-column-grid">
+                <form className="panel-card form-card" onSubmit={manipularEnvioOrdemServico}>
+                  <div className="section-heading">
+                    <div>
+                      <span className="eyebrow">Ordem de Serviço</span>
+                      <h3>Abrir nova OS</h3>
+                    </div>
+                    <button type="button" className="button-secondary" onClick={limparFormularioOrdemServico}>
+                      Limpar
+                    </button>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="full-width">
+                      <span>Cliente *</span>
+                      <select
+                        value={formularioOrdemServico.clienteId}
+                        onChange={(evento) =>
+                          setFormularioOrdemServico((estado) => ({
+                            ...estado,
+                            clienteId: evento.target.value,
+                            aparelhoId: ''
+                          }))
+                        }
+                        required
+                      >
+                        <option value="">Selecione um cliente</option>
+                        {clientes.map((cliente) => (
+                          <option key={cliente.id} value={cliente.id}>
+                            {cliente.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="full-width">
+                      <span>Aparelho *</span>
+                      <select
+                        value={formularioOrdemServico.aparelhoId}
+                        onChange={(evento) => setFormularioOrdemServico((estado) => ({ ...estado, aparelhoId: evento.target.value }))}
+                        disabled={!formularioOrdemServico.clienteId || aparelhosDisponiveisParaOs.length === 0}
+                        required
+                      >
+                        <option value="">
+                          {formularioOrdemServico.clienteId ? 'Selecione um aparelho' : 'Selecione um cliente primeiro'}
+                        </option>
+                        {aparelhosDisponiveisParaOs.map((aparelho) => (
+                          <option key={aparelho.id} value={aparelho.id}>
+                            {`${aparelho.marca} ${aparelho.modelo}`}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="full-width">
+                      <span>Defeito relatado *</span>
+                      <textarea
+                        value={formularioOrdemServico.descricaoEntrada}
+                        onChange={(evento) => setFormularioOrdemServico((estado) => ({ ...estado, descricaoEntrada: evento.target.value }))}
+                        placeholder="Descreva o defeito informado pelo cliente"
+                        rows={4}
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  <div className="form-actions">
+                    <button type="submit" className="button-primary" disabled={salvandoOrdemServico}>
+                      {salvandoOrdemServico ? 'Abrindo OS...' : 'Abrir Ordem de Serviço'}
+                    </button>
+                    <span className="helper-text">A API gera o protocolo e inicia a OS como Aberta.</span>
+                  </div>
+
+                  {protocoloOrdemServico ? (
+                    <div className="feedback success">Protocolo gerado: {protocoloOrdemServico}</div>
+                  ) : null}
+                </form>
+
+                <section className="panel-card callout-card">
+                  <span className="status-pill">RF03</span>
+                  <h3>OS vinculada ao cliente e aparelho</h3>
+                  <p>
+                    Selecione um cliente para carregar apenas os aparelhos dele, descreva o defeito relatado e
+                    confirme a abertura da ordem de serviço.
+                  </p>
+                </section>
+              </section>
+
+              <section className="panel-card list-card">
+                <div className="section-heading">
+                  <div>
+                    <span className="eyebrow">Ordens de Serviço</span>
+                    <h3>OS abertas</h3>
+                  </div>
+                  <button type="button" className="button-secondary" onClick={() => void carregarOrdensServico()}>
+                    Recarregar
+                  </button>
+                </div>
+
+                {carregandoOrdensServico ? (
+                  <div className="empty-state">Carregando ordens de serviço...</div>
+                ) : ordensServico.length === 0 ? (
+                  <div className="empty-state">Nenhuma ordem de serviço aberta ainda.</div>
+                ) : (
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Protocolo</th>
+                          <th>Cliente</th>
+                          <th>Aparelho</th>
+                          <th>Status</th>
+                          <th>Abertura</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ordensServico.map((ordem) => (
+                          <tr key={ordem.id}>
+                            <td>
+                              <strong>{ordem.numero}</strong>
+                              <small>Ordem de serviço</small>
+                            </td>
+                            <td>
+                              <strong>{ordem.cliente.nome}</strong>
+                              <small>{ordem.cliente.documento ?? 'Sem documento informado'}</small>
+                            </td>
+                            <td>
+                              <strong>{`${ordem.aparelho.marca} ${ordem.aparelho.modelo}`}</strong>
+                              <small>{ordem.aparelho.numeroSerie ?? 'Sem serial'}</small>
+                            </td>
+                            <td>
+                              <strong>{formatarStatusOrdem(ordem.status)}</strong>
+                              <small>Status atual</small>
+                            </td>
+                            <td>
+                              <strong>{formatarData(ordem.dataAbertura)}</strong>
+                              <small>Data de entrada</small>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
 
               <section className="two-column-grid">
                 <form className="panel-card form-card" onSubmit={manipularEnvioAparelho}>
