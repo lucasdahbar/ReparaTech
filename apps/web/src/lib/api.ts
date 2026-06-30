@@ -1,4 +1,4 @@
-import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario } from '../types';
+import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, ConsultaStatusResultado } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
@@ -73,4 +73,13 @@ export async function cadastrarAparelho(aparelho: AparelhoFormulario) {
     method: 'POST',
     body: JSON.stringify(aparelho)
   });
+}
+
+export async function consultarStatusPublico(protocolo: string, cpf: string) {
+  const params = new URLSearchParams({
+    protocolo,
+    cpf
+  });
+
+  return requisicao<ConsultaStatusResultado>(`/consulta-status?${params.toString()}`);
 }
