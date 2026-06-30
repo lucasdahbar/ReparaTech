@@ -72,6 +72,57 @@ export type ConsultaStatusResultado = {
   dataEntrada: string;
 };
 
+export type Peca = {
+  id: string;
+  nome: string;
+  sku: string;
+  descricao: string | null;
+  quantidade: number;
+  custoUnitario: string;
+  precoVenda: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PecaFormulario = {
+  nome: string;
+  sku: string;
+  descricao: string;
+  quantidade: string;
+  custoUnitario: string;
+  precoVenda: string;
+};
+
+export type OrdemServicoPeca = {
+  id: string;
+  ordemServicoId: string;
+  pecaId: string;
+  quantidade: number;
+  valorUnitario: string;
+  createdAt: string;
+  peca: Peca;
+};
+
+export type OrdemServico = {
+  id: string;
+  numero: string;
+  clienteId: string;
+  aparelhoId: string;
+  cliente: Cliente;
+  aparelho: Aparelho;
+  status: string;
+  descricaoEntrada: string;
+  observacaoTecnica: string | null;
+  valorOrcamento: string | null;
+  valorMaoDeObra: string | null;
+  retiradaAutorizada: boolean;
+  dataAbertura: string;
+  dataFechamento: string | null;
+  pecas: OrdemServicoPeca[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export const statusOrdemServico = [
   'Aberta',
   'Em Orçamento',

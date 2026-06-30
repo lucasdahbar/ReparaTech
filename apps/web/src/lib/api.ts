@@ -102,3 +102,41 @@ export async function consultarStatusPublico(protocolo: string, cpf: string) {
 
   return requisicao<ConsultaStatusResultado>(`/consulta-status?${params.toString()}`);
 }
+
+export async function listarPecas() {
+  return requisicao<RespostaListaPecas>('/pecas');
+}
+
+export async function cadastrarPeca(peca: PecaFormulario) {
+  return requisicao<RespostaPeca & RespostaMensagem>('/pecas', {
+    method: 'POST',
+    body: JSON.stringify(peca)
+  });
+}
+
+export async function atualizarPeca(id: string, peca: PecaFormulario) {
+  return requisicao<RespostaPeca & RespostaMensagem>(`/pecas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(peca)
+  });
+}
+
+export async function removerPeca(id: string) {
+  return requisicao<RespostaMensagem>(`/pecas/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function listarOrdensServico() {
+  return requisicao<RespostaListaOrdensServico>('/ordens-servico');
+}
+
+export async function vincularPecaNaOrdemServico(ordemId: string, pecaId: string, quantidade: string) {
+  return requisicao<RespostaOrdemServico & RespostaMensagem>(`/ordens-servico/${ordemId}/pecas`, {
+    method: 'POST',
+    body: JSON.stringify({
+      pecaId,
+      quantidade
+    })
+  });
+}
