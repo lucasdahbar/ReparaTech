@@ -39,6 +39,16 @@ export type AparelhoFormulario = {
   defeitoRelatado: string;
 };
 
+export type ConsultaStatusResultado = {
+  protocolo: string;
+  status: string;
+  aparelho: {
+    marca: string;
+    modelo: string;
+  };
+  dataEntrada: string;
+};
+
 export const statusOrdemServico = [
   'Aberta',
   'Em Orçamento',

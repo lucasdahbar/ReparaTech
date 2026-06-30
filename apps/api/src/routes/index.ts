@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import clientesRoutes from '../modules/clientes/clientes.routes';
 import aparelhosRoutes from '../modules/aparelhos/aparelhos.routes';
+import consultaStatusRoutes from '../modules/consulta-status/consulta-status.routes';
 import pecasRoutes from '../modules/pecas/pecas.routes';
 import ordensServicoRoutes from '../modules/ordens-servico/ordens-servico.routes';
 
@@ -15,6 +16,7 @@ routes.get('/', (_req, res) => {
 
 routes.use('/clientes', clientesRoutes);
 routes.use('/aparelhos', aparelhosRoutes);
+routes.use('/consulta-status', consultaStatusRoutes);
 routes.use('/pecas', pecasRoutes);
 routes.use('/ordens-servico', ordensServicoRoutes);
 

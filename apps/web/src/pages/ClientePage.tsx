@@ -1,13 +1,40 @@
-const passos = [
-  'Aberta',
-  'Em Orçamento',
-  'Aguardando Peças',
-  'Em Manutenção',
-  'Pronta para Retirada',
-  'Finalizada'
-];
+import { FormEvent, useState } from 'react';
+
+import { consultarStatusPublico } from '../lib/api';
+import type { ConsultaStatusResultado } from '../types';
+
+const MENSAGEM_NAO_LOCALIZADO = 'Protocolo ou CPF não localizado. Verifique os dados digitados.';
+
+function formatarData(dataISO: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(dataISO));
+}
 
 export function ClientePage() {
+  const [protocolo, setProtocolo] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [resultado, setResultado] = useState<ConsultaStatusResultado | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [consultando, setConsultando] = useState(false);
+
+  const consultarStatus = async (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    setConsultando(true);
+    setResultado(null);
+    setErro(null);
+
+    try {
+      const consulta = await consultarStatusPublico(protocolo, cpf);
+      setResultado(consulta);
+    } catch {
+      setErro(MENSAGEM_NAO_LOCALIZADO);
+    } finally {
+      setConsultando(false);
+    }
+  };
+
   return (
     <div className="page-stack">
       <section className="hero-card">
@@ -15,55 +42,92 @@ export function ClientePage() {
           <span className="eyebrow">Cliente</span>
           <h2>Consulta de status</h2>
           <p>
-            O cliente terá uma visão simples e objetiva da própria ordem de serviço, sem acesso às
-            rotinas internas do atendente ou do técnico.
+            Acompanhe o andamento da ordem de serviço usando apenas o protocolo informado pela assistência
+            e o CPF cadastrado no atendimento.
           </p>
         </div>
 
         <div className="notice-card">
-          <h3>Experiência prevista</h3>
-          <p>
-            A tela já nasce com a estrutura de acompanhamento do status para facilitar a evolução do
-            módulo quando a OS estiver completa.
-          </p>
+          <h3>Consulta pública</h3>
+          <p>Esta área mostra somente protocolo, status, aparelho e data de entrada.</p>
         </div>
       </section>
 
-      <section className="panel-card">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">Visualização</span>
-            <h3>Fluxo de atendimento</h3>
-          </div>
-        </div>
-
-        <div className="timeline">
-          {passos.map((passo, indice) => (
-            <div key={passo} className={`timeline-step${indice === 3 ? ' current' : ''}`}>
-              <span>{indice + 1}</span>
-              <div>
-                <strong>{passo}</strong>
-                <p>
-                  {indice === 0 && 'OS registrada e aguardando a primeira análise.'}
-                  {indice === 1 && 'Orçamento enviado para aprovação.'}
-                  {indice === 2 && 'Reparo depende da chegada da peça.'}
-                  {indice === 3 && 'Serviço em execução pelo técnico.'}
-                  {indice === 4 && 'Equipamento pronto para retirada.'}
-                  {indice === 5 && 'Atendimento concluído.'}
-                </p>
-              </div>
+      <section className="two-column-grid">
+        <form className="panel-card form-card" onSubmit={consultarStatus}>
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Acompanhar OS</span>
+              <h3>Informe seus dados</h3>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      <section className="panel-card callout-card">
-        <span className="status-pill">Portal do cliente</span>
-        <h3>Consulta restrita ao andamento da OS</h3>
-        <p>
-          Quando o módulo de autenticação entrar, o cliente verá apenas o próprio número de ordem e o
-          estágio atual do serviço.
-        </p>
+          <div className="form-grid">
+            <label className="full-width">
+              <span>Protocolo *</span>
+              <input
+                value={protocolo}
+                onChange={(evento) => setProtocolo(evento.target.value)}
+                placeholder="OS-000001"
+                required
+              />
+            </label>
+
+            <label className="full-width">
+              <span>CPF *</span>
+              <input
+                value={cpf}
+                onChange={(evento) => setCpf(evento.target.value)}
+                placeholder="00000000000"
+                required
+              />
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" className="button-primary" disabled={consultando}>
+              {consultando ? 'Consultando...' : 'Consultar status'}
+            </button>
+            <span className="helper-text">Use o CPF exatamente como foi cadastrado na assistência.</span>
+          </div>
+
+          {erro ? <div className="feedback error">{erro}</div> : null}
+        </form>
+
+        <section className="panel-card list-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Resultado</span>
+              <h3>Status da ordem de serviço</h3>
+            </div>
+          </div>
+
+          {!resultado ? (
+            <div className="empty-state">Informe o protocolo e o CPF para consultar o andamento.</div>
+          ) : (
+            <div className="status-flow">
+              <article className="status-step">
+                <strong>{resultado.status}</strong>
+                <p>Status atual do atendimento.</p>
+              </article>
+
+              <article className="status-step">
+                <strong>{resultado.protocolo}</strong>
+                <p>Protocolo da ordem de serviço.</p>
+              </article>
+
+              <article className="status-step">
+                <strong>{`${resultado.aparelho.marca} ${resultado.aparelho.modelo}`}</strong>
+                <p>Aparelho vinculado ao atendimento.</p>
+              </article>
+
+              <article className="status-step">
+                <strong>{formatarData(resultado.dataEntrada)}</strong>
+                <p>Data de entrada na assistência.</p>
+              </article>
+            </div>
+          )}
+        </section>
       </section>
     </div>
   );
