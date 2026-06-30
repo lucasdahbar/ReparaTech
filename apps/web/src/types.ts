@@ -39,6 +39,29 @@ export type AparelhoFormulario = {
   defeitoRelatado: string;
 };
 
+export type OrdemServico = {
+  id: string;
+  numero: string;
+  clienteId: string;
+  aparelhoId: string;
+  cliente: Cliente;
+  aparelho: Aparelho;
+  status: string;
+  descricaoEntrada: string;
+  observacaoTecnica: string | null;
+  retiradaAutorizada: boolean;
+  dataAbertura: string;
+  dataFechamento: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrdemServicoFormulario = {
+  clienteId: string;
+  aparelhoId: string;
+  descricaoEntrada: string;
+};
+
 export type ConsultaStatusResultado = {
   protocolo: string;
   status: string;
