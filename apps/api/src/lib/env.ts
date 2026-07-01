@@ -4,7 +4,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatório.'),
-  CORS_ORIGIN: z.string().default('http://localhost:5173')
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  AUTH_SECRET: z.string().min(16).default('repairatech-dev-secret')
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

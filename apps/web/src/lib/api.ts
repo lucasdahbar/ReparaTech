@@ -1,6 +1,17 @@
-import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, ConsultaStatusResultado, OrdemServico, OrdemServicoFormulario } from '../types';
+import type {
+  Aparelho,
+  AparelhoFormulario,
+  Cliente,
+  ClienteFormulario,
+  ConsultaStatusResultado,
+  OrdemServico,
+  Peca,
+  PecaFormulario,
+  Sessao
+} from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+const STORAGE_KEY = 'repairatech:sessao';
 
 type RespostaListaClientes = {
   clientes: Cliente[];
@@ -30,13 +41,45 @@ type RespostaOrdemServico = {
   ordem: OrdemServico;
 };
 
+type RespostaLogin = Sessao & RespostaMensagem;
+
+export function obterSessaoSalva(): Sessao | null {
+  const valor = window.localStorage.getItem(STORAGE_KEY);
+
+  if (!valor) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(valor) as Sessao;
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+export function salvarSessao(sessao: Sessao) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
+}
+
+export function encerrarSessao() {
+  window.localStorage.removeItem(STORAGE_KEY);
+}
+
+function montarHeaders(headers?: HeadersInit) {
+  const sessao = obterSessaoSalva();
+
+  return {
+    'Content-Type': 'application/json',
+    ...(sessao ? { Authorization: `Bearer ${sessao.token}` } : {}),
+    ...(headers ?? {})
+  };
+}
+
 async function requisicao<T>(caminho: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${caminho}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {})
-    }
+    headers: montarHeaders(options.headers)
   });
 
   const payload = await response.json().catch(() => null);
@@ -46,6 +89,33 @@ async function requisicao<T>(caminho: string, options: RequestInit = {}): Promis
   }
 
   return payload as T;
+}
+
+async function requisicaoArquivo(caminho: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${caminho}`, {
+    headers: montarHeaders()
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.mensagem ?? 'Nao foi possivel baixar o arquivo.');
+  }
+
+  return response.blob();
+}
+
+export async function login(email: string, senha: string) {
+  const sessao = await requisicao<RespostaLogin>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, senha })
+  });
+
+  salvarSessao({
+    usuario: sessao.usuario,
+    token: sessao.token
+  });
+
+  return sessao;
 }
 
 export async function listarClientes() {
@@ -139,4 +209,8 @@ export async function vincularPecaNaOrdemServico(ordemId: string, pecaId: string
       quantidade
     })
   });
+}
+
+export async function baixarComprovanteOrdemServico(ordemId: string) {
+  return requisicaoArquivo(`/ordens-servico/${ordemId}/comprovante`);
 }

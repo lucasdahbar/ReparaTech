@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 import { prisma } from '../../lib/prisma';
 import { ApiError } from '../../shared/api-error';
+import { notificarClienteWhatsapp } from '../whatsapp/whatsapp.service';
 import { ordemServicoCreateSchema, ordemServicoStatusUpdateSchema, ordemServicoUpdateSchema, vincularPecaSchema } from './ordens-servico.schemas';
 
 type OrdemServicoCreateInput = z.infer<typeof ordemServicoCreateSchema>;
@@ -173,11 +174,17 @@ export const atualizarOrdemServico = async (id: string, dados: unknown) => {
     dadosAtualizacao.retiradaAutorizada = resultado.data.retiradaAutorizada;
   }
 
-  return prisma.ordemServico.update({
+  const ordemAtualizada = await prisma.ordemServico.update({
     where: { id },
     data: dadosAtualizacao,
     include: incluirRelacionamentos
   });
+
+  if (resultado.data.status === 'PRONTA_PARA_RETIRADA' && ordemExistente.status !== 'PRONTA_PARA_RETIRADA') {
+    await notificarClienteWhatsapp(id);
+  }
+
+  return ordemAtualizada;
 };
 
 export const atualizarStatusOrdemServico = async (id: string, dados: unknown) => {

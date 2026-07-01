@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 import { asyncHandler } from '../../shared/async-handler';
+import { gerarComprovanteOrdemServico } from '../comprovantes/comprovantes.service';
 import {
   atualizarOrdemServico,
   atualizarStatusOrdemServico,
@@ -21,6 +22,15 @@ export const obterOrdemServicoController = asyncHandler(async (req: Request, res
   const { id } = ordemServicoIdSchema.parse(req.params);
   const ordem = await obterOrdemServico(id);
   res.json({ ordem });
+});
+
+export const gerarComprovanteOrdemServicoController = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = ordemServicoIdSchema.parse(req.params);
+  const comprovante = await gerarComprovanteOrdemServico(id);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${comprovante.nomeArquivo}"`);
+  res.send(comprovante.arquivo);
 });
 
 export const cadastrarOrdemServicoController = asyncHandler(async (req: Request, res: Response) => {
