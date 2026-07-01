@@ -1,10 +1,32 @@
+import { useState } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 
+import { encerrarSessao, obterSessaoSalva } from './lib/api';
 import { AtendentePage } from './pages/AtendentePage';
 import { ClientePage } from './pages/ClientePage';
+import { LoginPage } from './pages/LoginPage';
 import { TecnicoPage } from './pages/TecnicoPage';
+import type { Sessao } from './types';
 
-function LayoutPrincipal() {
+type LayoutPrincipalProps = {
+  sessao: Sessao | null;
+  onLogout: () => void;
+};
+
+type RotaProtegidaProps = {
+  sessao: Sessao | null;
+  children: JSX.Element;
+};
+
+function RotaProtegida({ sessao, children }: RotaProtegidaProps) {
+  if (!sessao) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function LayoutPrincipal({ sessao, onLogout }: LayoutPrincipalProps) {
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -30,9 +52,14 @@ function LayoutPrincipal() {
         </nav>
 
         <div className="status-card">
-          <span className="status-pill">Marcos entregues</span>
-          <h2>Banco modelado e clientes funcionando</h2>
-          <p>O primeiro ciclo já deixa a estrutura pronta para evoluir o núcleo de OS e o inventário.</p>
+          <span className="status-pill">{sessao ? sessao.usuario.perfil : 'Area publica'}</span>
+          <h2>{sessao ? sessao.usuario.nome : 'Consulta do cliente'}</h2>
+          <p>{sessao ? sessao.usuario.email : 'Acompanhe uma ordem de servico sem login.'}</p>
+          {sessao ? (
+            <button type="button" className="button-secondary" onClick={onLogout}>
+              Sair
+            </button>
+          ) : null}
         </div>
       </aside>
 
@@ -44,12 +71,34 @@ function LayoutPrincipal() {
 }
 
 export function App() {
+  const [sessao, setSessao] = useState<Sessao | null>(() => obterSessaoSalva());
+
+  const sair = () => {
+    encerrarSessao();
+    setSessao(null);
+  };
+
   return (
     <Routes>
-      <Route element={<LayoutPrincipal />}>
+      <Route path="/login" element={sessao ? <Navigate to="/atendente" replace /> : <LoginPage onLogin={setSessao} />} />
+      <Route element={<LayoutPrincipal sessao={sessao} onLogout={sair} />}>
         <Route path="/" element={<Navigate to="/atendente" replace />} />
-        <Route path="/atendente" element={<AtendentePage />} />
-        <Route path="/tecnico" element={<TecnicoPage />} />
+        <Route
+          path="/atendente"
+          element={
+            <RotaProtegida sessao={sessao}>
+              <AtendentePage />
+            </RotaProtegida>
+          }
+        />
+        <Route
+          path="/tecnico"
+          element={
+            <RotaProtegida sessao={sessao}>
+              <TecnicoPage />
+            </RotaProtegida>
+          }
+        />
         <Route path="/cliente" element={<ClientePage />} />
       </Route>
     </Routes>

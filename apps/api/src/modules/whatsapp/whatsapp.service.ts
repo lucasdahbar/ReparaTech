@@ -33,8 +33,12 @@ export const notificarClienteWhatsapp = async (ordemId: string) => {
     dataEnvio: new Date().toISOString()
   };
 
-  await mkdir(path.dirname(caminhoLogWhatsapp), { recursive: true });
-  await appendFile(caminhoLogWhatsapp, `${JSON.stringify(tentativa)}\n`, 'utf8');
+  try {
+    await mkdir(path.dirname(caminhoLogWhatsapp), { recursive: true });
+    await appendFile(caminhoLogWhatsapp, `${JSON.stringify(tentativa)}\n`, 'utf8');
+  } catch (erro) {
+    console.error('Falha ao registrar mock de WhatsApp:', erro);
+  }
 
   return tentativa;
 };
