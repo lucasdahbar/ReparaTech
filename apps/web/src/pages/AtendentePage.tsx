@@ -322,20 +322,22 @@ export function AtendentePage() {
             </label>
 
             <label>
-              <span>Documento</span>
+              <span>CPF *</span>
               <input
                 value={formulario.documento}
                 onChange={(evento) => setFormulario((estado) => ({ ...estado, documento: evento.target.value }))}
-                placeholder="CPF ou CNPJ"
+                placeholder="000.000.000-00"
+                required
               />
             </label>
 
             <label>
-              <span>Telefone</span>
+              <span>Telefone *</span>
               <input
                 value={formulario.telefone}
                 onChange={(evento) => setFormulario((estado) => ({ ...estado, telefone: evento.target.value }))}
                 placeholder="(00) 00000-0000"
+                required
               />
             </label>
 
@@ -350,12 +352,13 @@ export function AtendentePage() {
             </label>
 
             <label className="full-width">
-              <span>Endereço</span>
+              <span>Endereço *</span>
               <textarea
                 value={formulario.endereco}
                 onChange={(evento) => setFormulario((estado) => ({ ...estado, endereco: evento.target.value }))}
                 placeholder="Rua, número, bairro, cidade"
                 rows={4}
+                required
               />
             </label>
           </div>
@@ -629,11 +632,12 @@ export function AtendentePage() {
                     </label>
 
                     <label>
-                      <span>Número de série</span>
+                      <span>Número de série *</span>
                       <input
                         value={formularioAparelho.numeroSerie}
                         onChange={(evento) => setFormularioAparelho((estado) => ({ ...estado, numeroSerie: evento.target.value }))}
                         placeholder="Serial"
+                        required
                       />
                     </label>
 

@@ -62,6 +62,11 @@ const incluirRelacionamentos = {
     include: {
       peca: true
     }
+  },
+  historicoStatus: {
+    orderBy: {
+      criadoEm: 'asc'
+    }
   }
 } as const;
 
@@ -127,7 +132,12 @@ export const cadastrarOrdemServico = async (dados: unknown) => {
       observacaoTecnica: resultado.data.observacaoTecnica,
       valorOrcamento: converterDecimal(resultado.data.valorOrcamento),
       valorMaoDeObra: converterDecimal(resultado.data.valorMaoDeObra),
-      retiradaAutorizada: resultado.data.retiradaAutorizada
+      retiradaAutorizada: resultado.data.retiradaAutorizada,
+      historicoStatus: {
+        create: {
+          status: 'ABERTA'
+        }
+      }
     },
     include: incluirRelacionamentos
   });
@@ -200,6 +210,13 @@ export const atualizarStatusOrdemServico = async (id: string, dados: unknown) =>
 
   validarTransicaoStatus(ordemExistente.status, resultado.data.status);
 
+  if (ordemExistente.status === resultado.data.status) {
+    return prisma.ordemServico.findUnique({
+      where: { id },
+      include: incluirRelacionamentos
+    });
+  }
+
   const dadosAtualizacao: Prisma.OrdemServicoUpdateInput = {
     status: resultado.data.status
   };
@@ -209,10 +226,23 @@ export const atualizarStatusOrdemServico = async (id: string, dados: unknown) =>
     dadosAtualizacao.dataFechamento = new Date();
   }
 
-  const ordemAtualizada = await prisma.ordemServico.update({
-    where: { id },
-    data: dadosAtualizacao,
-    include: incluirRelacionamentos
+  const ordemAtualizada = await prisma.$transaction(async (transacao) => {
+    await transacao.ordemServico.update({
+      where: { id },
+      data: dadosAtualizacao
+    });
+
+    await transacao.ordemServicoStatusHistorico.create({
+      data: {
+        ordemServicoId: id,
+        status: resultado.data.status
+      }
+    });
+
+    return transacao.ordemServico.findUnique({
+      where: { id },
+      include: incluirRelacionamentos
+    });
   });
 
   if (resultado.data.status === 'PRONTA_PARA_RETIRADA' && ordemExistente.status !== 'PRONTA_PARA_RETIRADA') {

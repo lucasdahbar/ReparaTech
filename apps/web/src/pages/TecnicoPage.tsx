@@ -117,6 +117,10 @@ export function TecnicoPage() {
     return ordens.find((ordem) => ordem.id === ordemSelecionadaId) ?? null;
   }, [ordemSelecionadaId, ordens]);
 
+  const historicoStatusOrdemSelecionada = useMemo(() => {
+    return ordemSelecionada?.historicoStatus ?? [];
+  }, [ordemSelecionada]);
+
   const ordensFiltradas = useMemo(() => {
     const termo = buscaProtocolo.trim().toLowerCase();
 
@@ -523,6 +527,22 @@ export function TecnicoPage() {
                   <small>{`${ordemSelecionada.aparelho.marca} ${ordemSelecionada.aparelho.modelo}`}</small>
                   <small>Defeito: {ordemSelecionada.descricaoEntrada}</small>
                   <small>Aberta em {formatarData(ordemSelecionada.dataAbertura)}</small>
+                </article>
+
+                <article className="summary-card">
+                  <strong>Histórico de status</strong>
+                  {historicoStatusOrdemSelecionada.length === 0 ? (
+                    <small>Sem alterações registradas.</small>
+                  ) : (
+                    <ul className="status-history-list">
+                      {historicoStatusOrdemSelecionada.map((item) => (
+                        <li key={item.id}>
+                          <strong>{statusLabels[item.status] ?? item.status}</strong>
+                          <small>{formatarData(item.criadoEm)}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </article>
               </div>
 

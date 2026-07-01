@@ -32,10 +32,10 @@ enum TipoMovimentoEstoque {
 model Cliente {
   id            String         @id @default(cuid())
   nome          String
-  documento     String?        @unique
-  telefone      String?
+  documento     String         @unique
+  telefone      String
   email         String?        @unique
-  endereco      String?
+  endereco      String
   aparelhos     Aparelho[]
   ordensServico OrdemServico[]
   usuarios      Usuario[]
@@ -67,7 +67,7 @@ model Aparelho {
   cliente         Cliente        @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   marca           String
   modelo          String
-  numeroSerie     String?        @unique
+  numeroSerie     String         @unique
   imei            String?        @unique
   defeitoRelatado  String?
   ordensServico   OrdemServico[]
@@ -95,6 +95,7 @@ model OrdemServico {
   dataFechamento    DateTime?
   pecas             OrdemServicoPeca[]
   movimentosEstoque MovimentoEstoque[]
+  historicoStatus   OrdemServicoStatusHistorico[]
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -102,6 +103,18 @@ model OrdemServico {
   @@index([aparelhoId])
   @@index([status])
   @@map("ordens_servico")
+}
+
+model OrdemServicoStatusHistorico {
+  id             String         @id @default(cuid())
+  ordemServicoId String
+  status         StatusOrdemServico
+  criadoEm       DateTime       @default(now())
+  ordemServico   OrdemServico   @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+
+  @@index([ordemServicoId])
+  @@index([status])
+  @@map("ordens_servico_status_historico")
 }
 
 model PecaEstoque {

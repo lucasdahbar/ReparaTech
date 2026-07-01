@@ -14,7 +14,7 @@ export const aparelhoCreateSchema = z.object({
   clienteId: z.string().cuid('O ID do cliente é inválido.'),
   marca: z.string().trim().min(2, 'A marca deve ter pelo menos 2 caracteres.'),
   modelo: z.string().trim().min(2, 'O modelo deve ter pelo menos 2 caracteres.'),
-  numeroSerie: textoOpcional(z.string().trim().min(2, 'O número de série deve ter pelo menos 2 caracteres.')),
+  numeroSerie: z.string().trim().min(2, 'O número de série deve ter pelo menos 2 caracteres.'),
   imei: textoOpcional(z.string().trim().min(5, 'O IMEI deve ter pelo menos 5 caracteres.')),
   defeitoRelatado: textoOpcional(z.string().trim().max(500, 'O defeito relatado deve ter no máximo 500 caracteres.'))
 });

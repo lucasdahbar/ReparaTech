@@ -17,6 +17,13 @@ export type ClienteFormulario = {
   endereco: string;
 };
 
+export type OrdemServicoStatusHistorico = {
+  id: string;
+  ordemServicoId: string;
+  status: string;
+  criadoEm: string;
+};
+
 export type Aparelho = {
   id: string;
   clienteId: string;
@@ -102,6 +109,7 @@ export type OrdemServico = {
   dataAbertura: string;
   dataFechamento: string | null;
   pecas: OrdemServicoPeca[];
+  historicoStatus: OrdemServicoStatusHistorico[];
   createdAt: string;
   updatedAt: string;
 };
