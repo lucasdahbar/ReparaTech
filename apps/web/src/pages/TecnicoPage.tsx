@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
+  atualizarStatusOrdemServico,
+  baixarComprovanteOrdemServico,
   atualizarPeca,
   cadastrarPeca,
   listarOrdensServico,
@@ -26,6 +28,15 @@ const statusLabels: Record<string, string> = {
   EM_MANUTENCAO: 'Em Manutenção',
   PRONTA_PARA_RETIRADA: 'Pronta',
   FINALIZADA: 'Entregue'
+};
+
+const proximosStatusPermitidos: Record<string, string[]> = {
+  ABERTA: ['EM_ORCAMENTO'],
+  EM_ORCAMENTO: ['AGUARDANDO_PECAS', 'EM_MANUTENCAO'],
+  AGUARDANDO_PECAS: ['EM_MANUTENCAO'],
+  EM_MANUTENCAO: ['PRONTA_PARA_RETIRADA'],
+  PRONTA_PARA_RETIRADA: ['FINALIZADA'],
+  FINALIZADA: []
 };
 
 function formatarMoeda(valor: string | null) {
@@ -63,11 +74,14 @@ export function TecnicoPage() {
   const [formularioPeca, setFormularioPeca] = useState<PecaFormulario>(formularioPecaInicial);
   const [pecaSelecionadaId, setPecaSelecionadaId] = useState<string | null>(null);
   const [ordemSelecionadaId, setOrdemSelecionadaId] = useState('');
+  const [novoStatus, setNovoStatus] = useState('');
   const [pecaUsoId, setPecaUsoId] = useState('');
   const [quantidadeUso, setQuantidadeUso] = useState('1');
   const [carregando, setCarregando] = useState(true);
   const [salvandoPeca, setSalvandoPeca] = useState(false);
   const [lancandoPeca, setLancandoPeca] = useState(false);
+  const [atualizandoStatus, setAtualizandoStatus] = useState(false);
+  const [baixandoComprovante, setBaixandoComprovante] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -100,6 +114,10 @@ export function TecnicoPage() {
     return ordens.find((ordem) => ordem.id === ordemSelecionadaId) ?? null;
   }, [ordemSelecionadaId, ordens]);
 
+  useEffect(() => {
+    setNovoStatus(ordemSelecionada?.status ?? '');
+  }, [ordemSelecionada?.status]);
+
   const pecaUsoSelecionada = useMemo(() => {
     return pecas.find((peca) => peca.id === pecaUsoId) ?? null;
   }, [pecaUsoId, pecas]);
@@ -111,6 +129,10 @@ export function TecnicoPage() {
       pecasSemSaldo: pecas.filter((peca) => peca.quantidade === 0).length
     };
   }, [pecas]);
+
+  const statusDisponiveis = ordemSelecionada
+    ? [ordemSelecionada.status, ...(proximosStatusPermitidos[ordemSelecionada.status] ?? [])]
+    : [];
 
   const limparFormularioPeca = () => {
     setFormularioPeca(formularioPecaInicial);
@@ -196,6 +218,59 @@ export function TecnicoPage() {
       setErro(erroOperacao instanceof Error ? erroOperacao.message : 'Não foi possível lançar a peça na OS.');
     } finally {
       setLancandoPeca(false);
+    }
+  };
+
+  const alterarStatusDaOS = async () => {
+    if (!ordemSelecionada) {
+      return;
+    }
+
+    if (novoStatus === ordemSelecionada.status) {
+      setErro('Selecione um novo status para atualizar a OS.');
+      setMensagem(null);
+      return;
+    }
+
+    setAtualizandoStatus(true);
+    setMensagem(null);
+    setErro(null);
+
+    try {
+      await atualizarStatusOrdemServico(ordemSelecionada.id, novoStatus);
+      setMensagem('Status da ordem de servico atualizado com sucesso.');
+      await carregarDados();
+    } catch (erroOperacao) {
+      setErro(erroOperacao instanceof Error ? erroOperacao.message : 'Nao foi possivel atualizar o status da OS.');
+    } finally {
+      setAtualizandoStatus(false);
+    }
+  };
+
+  const baixarComprovante = async () => {
+    if (!ordemSelecionada) {
+      return;
+    }
+
+    setBaixandoComprovante(true);
+    setMensagem(null);
+    setErro(null);
+
+    try {
+      const arquivo = await baixarComprovanteOrdemServico(ordemSelecionada.id);
+      const url = window.URL.createObjectURL(arquivo);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `comprovante-${ordemSelecionada.numero}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setMensagem('Comprovante gerado para download.');
+    } catch (erroOperacao) {
+      setErro(erroOperacao instanceof Error ? erroOperacao.message : 'Nao foi possivel baixar o comprovante.');
+    } finally {
+      setBaixandoComprovante(false);
     }
   };
 
@@ -463,6 +538,36 @@ export function TecnicoPage() {
                   {ordemSelecionada.cliente.nome} - {ordemSelecionada.aparelho.marca} {ordemSelecionada.aparelho.modelo}
                 </small>
                 <small>Aberta em {formatarData(ordemSelecionada.dataAbertura)}</small>
+                <div className="summary-actions">
+                  <label>
+                    <span>Novo status</span>
+                    <select value={novoStatus} onChange={(evento) => setNovoStatus(evento.target.value)}>
+                      {statusDisponiveis.map((status) => (
+                        <option key={status} value={status}>
+                          {statusLabels[status] ?? status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="action-group">
+                    <button
+                      type="button"
+                      className="button-primary"
+                      disabled={atualizandoStatus || novoStatus === ordemSelecionada.status}
+                      onClick={() => void alterarStatusDaOS()}
+                    >
+                      {atualizandoStatus ? 'Atualizando...' : 'Atualizar status'}
+                    </button>
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      disabled={baixandoComprovante}
+                      onClick={() => void baixarComprovante()}
+                    >
+                      {baixandoComprovante ? 'Gerando...' : 'Baixar comprovante'}
+                    </button>
+                  </div>
+                </div>
               </article>
 
               {ordemSelecionada.pecas.length === 0 ? (

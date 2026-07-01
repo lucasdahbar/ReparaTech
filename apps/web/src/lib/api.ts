@@ -198,6 +198,13 @@ export async function listarOrdensServico() {
   return requisicao<RespostaListaOrdensServico>('/ordens-servico');
 }
 
+export async function atualizarStatusOrdemServico(ordemId: string, status: string) {
+  return requisicao<RespostaOrdemServico & RespostaMensagem>(`/ordens-servico/${ordemId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
+  });
+}
+
 export async function vincularPecaNaOrdemServico(ordemId: string, pecaId: string, quantidade: string) {
   return requisicao<RespostaOrdemServico & RespostaMensagem>(`/ordens-servico/${ordemId}/pecas`, {
     method: 'POST',
