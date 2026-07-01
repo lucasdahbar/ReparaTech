@@ -180,10 +180,6 @@ export const atualizarOrdemServico = async (id: string, dados: unknown) => {
     include: incluirRelacionamentos
   });
 
-  if (resultado.data.status === 'PRONTA_PARA_RETIRADA' && ordemExistente.status !== 'PRONTA_PARA_RETIRADA') {
-    await notificarClienteWhatsapp(id);
-  }
-
   return ordemAtualizada;
 };
 
@@ -213,11 +209,17 @@ export const atualizarStatusOrdemServico = async (id: string, dados: unknown) =>
     dadosAtualizacao.dataFechamento = new Date();
   }
 
-  return prisma.ordemServico.update({
+  const ordemAtualizada = await prisma.ordemServico.update({
     where: { id },
     data: dadosAtualizacao,
     include: incluirRelacionamentos
   });
+
+  if (resultado.data.status === 'PRONTA_PARA_RETIRADA' && ordemExistente.status !== 'PRONTA_PARA_RETIRADA') {
+    await notificarClienteWhatsapp(id);
+  }
+
+  return ordemAtualizada;
 };
 
 export const vincularPecaNaOrdemServico = async (ordemId: string, dados: unknown) => {
