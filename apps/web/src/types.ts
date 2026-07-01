@@ -106,6 +106,14 @@ export type OrdemServico = {
   updatedAt: string;
 };
 
+export type StatusOrdemServicoTecnico =
+  | 'ABERTA'
+  | 'EM_ORCAMENTO'
+  | 'AGUARDANDO_PECAS'
+  | 'EM_MANUTENCAO'
+  | 'PRONTA_PARA_RETIRADA'
+  | 'FINALIZADA';
+
 export type PerfilUsuario = 'ADMIN' | 'ATENDENTE' | 'TECNICO';
 
 export type UsuarioSessao = {

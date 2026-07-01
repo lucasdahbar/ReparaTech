@@ -8,7 +8,8 @@ import type {
   OrdemServicoFormulario,
   Peca,
   PecaFormulario,
-  Sessao
+  Sessao,
+  StatusOrdemServicoTecnico
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
@@ -213,6 +214,13 @@ export async function vincularPecaNaOrdemServico(ordemId: string, pecaId: string
       pecaId,
       quantidade
     })
+  });
+}
+
+export async function atualizarStatusOrdemServico(ordemId: string, status: StatusOrdemServicoTecnico) {
+  return requisicao<RespostaOrdemServico & RespostaMensagem>(`/ordens-servico/${ordemId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
   });
 }
 

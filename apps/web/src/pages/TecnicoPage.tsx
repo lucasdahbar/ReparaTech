@@ -2,13 +2,14 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import {
   atualizarPeca,
+  atualizarStatusOrdemServico,
   cadastrarPeca,
   listarOrdensServico,
   listarPecas,
   removerPeca,
   vincularPecaNaOrdemServico
 } from '../lib/api';
-import type { OrdemServico, Peca, PecaFormulario } from '../types';
+import type { OrdemServico, Peca, PecaFormulario, StatusOrdemServicoTecnico } from '../types';
 
 const formularioPecaInicial: PecaFormulario = {
   nome: '',
@@ -26,6 +27,15 @@ const statusLabels: Record<string, string> = {
   EM_MANUTENCAO: 'Em Manutenção',
   PRONTA_PARA_RETIRADA: 'Pronta',
   FINALIZADA: 'Entregue'
+};
+
+const proximosStatusPermitidos: Record<StatusOrdemServicoTecnico, StatusOrdemServicoTecnico[]> = {
+  ABERTA: ['EM_ORCAMENTO'],
+  EM_ORCAMENTO: ['AGUARDANDO_PECAS', 'EM_MANUTENCAO'],
+  AGUARDANDO_PECAS: ['EM_MANUTENCAO'],
+  EM_MANUTENCAO: ['PRONTA_PARA_RETIRADA'],
+  PRONTA_PARA_RETIRADA: ['FINALIZADA'],
+  FINALIZADA: []
 };
 
 function formatarMoeda(valor: string | null) {
@@ -63,11 +73,14 @@ export function TecnicoPage() {
   const [formularioPeca, setFormularioPeca] = useState<PecaFormulario>(formularioPecaInicial);
   const [pecaSelecionadaId, setPecaSelecionadaId] = useState<string | null>(null);
   const [ordemSelecionadaId, setOrdemSelecionadaId] = useState('');
+  const [buscaProtocolo, setBuscaProtocolo] = useState('');
+  const [novoStatus, setNovoStatus] = useState<StatusOrdemServicoTecnico | ''>('');
   const [pecaUsoId, setPecaUsoId] = useState('');
   const [quantidadeUso, setQuantidadeUso] = useState('1');
   const [carregando, setCarregando] = useState(true);
   const [salvandoPeca, setSalvandoPeca] = useState(false);
   const [lancandoPeca, setLancandoPeca] = useState(false);
+  const [atualizandoStatus, setAtualizandoStatus] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -96,9 +109,27 @@ export function TecnicoPage() {
     void carregarDados();
   }, []);
 
+  useEffect(() => {
+    setNovoStatus('');
+  }, [ordemSelecionadaId]);
+
   const ordemSelecionada = useMemo(() => {
     return ordens.find((ordem) => ordem.id === ordemSelecionadaId) ?? null;
   }, [ordemSelecionadaId, ordens]);
+
+  const ordensFiltradas = useMemo(() => {
+    const termo = buscaProtocolo.trim().toLowerCase();
+
+    if (!termo) {
+      return ordens;
+    }
+
+    return ordens.filter((ordem) => ordem.numero.toLowerCase().includes(termo));
+  }, [buscaProtocolo, ordens]);
+
+  const proximosStatus = ordemSelecionada
+    ? proximosStatusPermitidos[ordemSelecionada.status as StatusOrdemServicoTecnico] ?? []
+    : [];
 
   const pecaUsoSelecionada = useMemo(() => {
     return pecas.find((peca) => peca.id === pecaUsoId) ?? null;
@@ -196,6 +227,28 @@ export function TecnicoPage() {
       setErro(erroOperacao instanceof Error ? erroOperacao.message : 'Não foi possível lançar a peça na OS.');
     } finally {
       setLancandoPeca(false);
+    }
+  };
+
+  const alterarStatusOS = async (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    setAtualizandoStatus(true);
+    setMensagem(null);
+    setErro(null);
+
+    try {
+      if (!ordemSelecionadaId || !novoStatus) {
+        throw new Error('Selecione uma OS e o novo status.');
+      }
+
+      await atualizarStatusOrdemServico(ordemSelecionadaId, novoStatus);
+      setMensagem('Status da ordem de serviço atualizado com sucesso.');
+      setNovoStatus('');
+      await carregarDados();
+    } catch (erroOperacao) {
+      setErro(erroOperacao instanceof Error ? erroOperacao.message : 'Não foi possível alterar o status da OS.');
+    } finally {
+      setAtualizandoStatus(false);
     }
   };
 
@@ -383,6 +436,127 @@ export function TecnicoPage() {
             </div>
           )}
         </section>
+      </section>
+
+      <section className="two-column-grid">
+        <section className="panel-card list-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Ciclo da OS</span>
+              <h3>Ordens de serviço</h3>
+            </div>
+            <button type="button" className="button-secondary" onClick={() => void carregarDados()}>
+              Recarregar
+            </button>
+          </div>
+
+          <label>
+            <span>Buscar por protocolo</span>
+            <input
+              value={buscaProtocolo}
+              onChange={(evento) => setBuscaProtocolo(evento.target.value)}
+              placeholder="OS-..."
+            />
+          </label>
+
+          {carregando ? (
+            <div className="empty-state">Carregando ordens de serviço...</div>
+          ) : ordensFiltradas.length === 0 ? (
+            <div className="empty-state">Nenhuma OS encontrada.</div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Protocolo</th>
+                    <th>Cliente</th>
+                    <th>Aparelho</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ordensFiltradas.map((ordem) => (
+                    <tr key={ordem.id}>
+                      <td>
+                        <button type="button" className="button-secondary" onClick={() => setOrdemSelecionadaId(ordem.id)}>
+                          {ordem.numero}
+                        </button>
+                        <small>{formatarData(ordem.dataAbertura)}</small>
+                      </td>
+                      <td>
+                        <strong>{ordem.cliente.nome}</strong>
+                        <small>{ordem.cliente.documento ?? 'Sem documento'}</small>
+                      </td>
+                      <td>
+                        <strong>{`${ordem.aparelho.marca} ${ordem.aparelho.modelo}`}</strong>
+                        <small>{ordem.aparelho.numeroSerie ?? 'Sem serial'}</small>
+                      </td>
+                      <td>
+                        <strong>{statusLabels[ordem.status] ?? ordem.status}</strong>
+                        <small>{ordem.status === 'FINALIZADA' ? 'Encerrada' : 'Em andamento'}</small>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <form className="panel-card form-card" onSubmit={alterarStatusOS}>
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Status</span>
+              <h3>Alterar status da OS</h3>
+            </div>
+          </div>
+
+          {!ordemSelecionada ? (
+            <div className="empty-state">Selecione uma OS para gerenciar o status.</div>
+          ) : (
+            <>
+              <div className="order-summary">
+                <article className="summary-card">
+                  <strong>{ordemSelecionada.numero}</strong>
+                  <span>{statusLabels[ordemSelecionada.status] ?? ordemSelecionada.status}</span>
+                  <small>{ordemSelecionada.cliente.nome}</small>
+                  <small>{`${ordemSelecionada.aparelho.marca} ${ordemSelecionada.aparelho.modelo}`}</small>
+                  <small>Defeito: {ordemSelecionada.descricaoEntrada}</small>
+                  <small>Aberta em {formatarData(ordemSelecionada.dataAbertura)}</small>
+                </article>
+              </div>
+
+              {ordemSelecionada.status === 'FINALIZADA' ? (
+                <div className="empty-state compact">OS entregue/finalizada. O status não pode ser alterado.</div>
+              ) : (
+                <>
+                  <label>
+                    <span>Novo status *</span>
+                    <select
+                      value={novoStatus}
+                      onChange={(evento) => setNovoStatus(evento.target.value as StatusOrdemServicoTecnico)}
+                      required
+                    >
+                      <option value="">Selecione o próximo status</option>
+                      {proximosStatus.map((status) => (
+                        <option key={status} value={status}>
+                          {statusLabels[status] ?? status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="form-actions">
+                    <button type="submit" className="button-primary" disabled={atualizandoStatus || !novoStatus}>
+                      {atualizandoStatus ? 'Atualizando...' : 'Atualizar status'}
+                    </button>
+                    <span className="helper-text">As transições são validadas pela API.</span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </form>
       </section>
 
       <section className="two-column-grid">
