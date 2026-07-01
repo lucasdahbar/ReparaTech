@@ -1,6 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { atualizarCliente, cadastrarAparelho, cadastrarCliente, cadastrarOrdemServico, listarAparelhos, listarClientes, listarOrdensServico, removerCliente } from '../lib/api';
+import {
+  atualizarCliente,
+  baixarComprovanteOrdemServico,
+  cadastrarAparelho,
+  cadastrarCliente,
+  cadastrarOrdemServico,
+  listarAparelhos,
+  listarClientes,
+  listarOrdensServico,
+  removerCliente
+} from '../lib/api';
 import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, OrdemServico, OrdemServicoFormulario } from '../types';
 
 const formularioInicial: ClienteFormulario = {
@@ -237,6 +247,23 @@ export function AtendentePage() {
       setErro(erroOrdemServico instanceof Error ? erroOrdemServico.message : 'Não foi possível abrir a ordem de serviço.');
     } finally {
       setSalvandoOrdemServico(false);
+    }
+  };
+
+  const baixarComprovante = async (ordem: OrdemServico) => {
+    setErro(null);
+
+    try {
+      const arquivo = await baixarComprovanteOrdemServico(ordem.id);
+      const url = URL.createObjectURL(arquivo);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `comprovante-${ordem.numero}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (erroComprovante) {
+      setErro(erroComprovante instanceof Error ? erroComprovante.message : 'Não foi possível baixar o comprovante.');
     }
   };
 
@@ -513,6 +540,7 @@ export function AtendentePage() {
                           <th>Aparelho</th>
                           <th>Status</th>
                           <th>Abertura</th>
+                          <th>Ações</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -537,6 +565,11 @@ export function AtendentePage() {
                             <td>
                               <strong>{formatarData(ordem.dataAbertura)}</strong>
                               <small>Data de entrada</small>
+                            </td>
+                            <td>
+                              <button type="button" className="button-secondary" onClick={() => void baixarComprovante(ordem)}>
+                                Comprovante
+                              </button>
                             </td>
                           </tr>
                         ))}
