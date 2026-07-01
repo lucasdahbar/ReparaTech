@@ -5,6 +5,7 @@ import type {
   ClienteFormulario,
   ConsultaStatusResultado,
   OrdemServico,
+  OrdemServicoFormulario,
   Peca,
   PecaFormulario,
   Sessao
@@ -39,6 +40,14 @@ type RespostaAparelho = {
 
 type RespostaOrdemServico = {
   ordem: OrdemServico;
+};
+
+type RespostaListaPecas = {
+  pecas: Peca[];
+};
+
+type RespostaPeca = {
+  peca: Peca;
 };
 
 type RespostaLogin = Sessao & RespostaMensagem;
@@ -195,10 +204,6 @@ export async function removerPeca(id: string) {
   return requisicao<RespostaMensagem>(`/pecas/${id}`, {
     method: 'DELETE'
   });
-}
-
-export async function listarOrdensServico() {
-  return requisicao<RespostaListaOrdensServico>('/ordens-servico');
 }
 
 export async function vincularPecaNaOrdemServico(ordemId: string, pecaId: string, quantidade: string) {

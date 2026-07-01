@@ -16,6 +16,12 @@ export type UsuarioAutenticado = {
   perfil: Exclude<PerfilUsuario, 'CLIENTE'>;
 };
 
+type TokenPayload = Omit<UsuarioAutenticado, 'id' | 'perfil'> & {
+  sub: string;
+  exp: number;
+  perfil: PerfilUsuario;
+};
+
 const usuariosDemo: Array<UsuarioAutenticado & { senha: string }> = [
   {
     id: 'demo-admin',
@@ -87,14 +93,21 @@ export const verificarToken = (token: string): UsuarioAutenticado => {
     throw new ApiError(401, 'Sessao invalida.');
   }
 
-  const [header, body, assinatura] = partes;
+  const header = partes[0];
+  const body = partes[1];
+  const assinatura = partes[2];
+
+  if (!header || !body || !assinatura) {
+    throw new ApiError(401, 'Sessao invalida.');
+  }
+
   const assinaturaEsperada = base64Url(createHmac('sha256', env.AUTH_SECRET).update(`${header}.${body}`).digest());
 
   if (!compararSeguro(assinatura, assinaturaEsperada)) {
     throw new ApiError(401, 'Sessao invalida.');
   }
 
-  const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as UsuarioAutenticado & { exp: number; sub: string };
+  const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as TokenPayload;
 
   if (payload.exp < Math.floor(Date.now() / 1000)) {
     throw new ApiError(401, 'Sessao expirada.');
