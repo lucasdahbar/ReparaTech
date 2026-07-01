@@ -4,6 +4,7 @@ import {
   atualizarOrdemServicoController,
   atualizarStatusOrdemServicoController,
   cadastrarOrdemServicoController,
+  gerarComprovanteOrdemServicoController,
   listarOrdensServicoController,
   obterOrdemServicoController,
   removerOrdemServicoController,
@@ -13,6 +14,7 @@ import {
 const ordensServicoRoutes = Router();
 
 ordensServicoRoutes.get('/', listarOrdensServicoController);
+ordensServicoRoutes.get('/:id/comprovante', gerarComprovanteOrdemServicoController);
 ordensServicoRoutes.get('/:id', obterOrdemServicoController);
 ordensServicoRoutes.post('/', cadastrarOrdemServicoController);
 ordensServicoRoutes.put('/:id', atualizarOrdemServicoController);

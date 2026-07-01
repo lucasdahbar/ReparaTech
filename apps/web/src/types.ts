@@ -100,6 +100,20 @@ export type OrdemServico = {
   updatedAt: string;
 };
 
+export type PerfilUsuario = 'ADMIN' | 'ATENDENTE' | 'TECNICO';
+
+export type UsuarioSessao = {
+  id: string;
+  nome: string;
+  email: string;
+  perfil: PerfilUsuario;
+};
+
+export type Sessao = {
+  usuario: UsuarioSessao;
+  token: string;
+};
+
 export const statusOrdemServico = [
   'Aberta',
   'Em Orçamento',
