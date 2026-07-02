@@ -71,9 +71,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         {erro ? <div className="feedback error">{erro}</div> : null}
 
         <div className="login-demo">
-          <strong>Usuarios demo: </strong>
-          <span>admin@repairatech.local / admin123 | </span>
-          <span>atendente@repairatech.local / atendente123 | </span>
+          <strong>Usuarios demo</strong>
+          <span>admin@repairatech.local / admin123</span>
+          <span>atendente@repairatech.local / atendente123</span>
           <span>tecnico@repairatech.local / tecnico123</span>
         </div>
       </form>

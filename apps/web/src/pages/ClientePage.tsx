@@ -1,9 +1,19 @@
 import { FormEvent, useState } from 'react';
+import { Search } from 'lucide-react';
 
 import { consultarStatusPublico } from '../lib/api';
 import type { ConsultaStatusResultado } from '../types';
 
 const MENSAGEM_NAO_LOCALIZADO = 'Protocolo ou CPF não localizado. Verifique os dados digitados.';
+
+const statusLabels: Record<string, string> = {
+  ABERTA: 'Aberta',
+  EM_ORCAMENTO: 'Em Orçamento',
+  AGUARDANDO_PECAS: 'Aguardando Peças',
+  EM_MANUTENCAO: 'Em Manutenção',
+  PRONTA_PARA_RETIRADA: 'Pronta para Retirada',
+  FINALIZADA: 'Finalizada'
+};
 
 function formatarData(dataISO: string) {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -86,6 +96,7 @@ export function ClientePage() {
 
           <div className="form-actions">
             <button type="submit" className="button-primary" disabled={consultando}>
+              {!consultando ? <Search size={15} strokeWidth={2.2} /> : null}
               {consultando ? 'Consultando...' : 'Consultar status'}
             </button>
             <span className="helper-text">Use o CPF exatamente como foi cadastrado na assistência.</span>
@@ -107,7 +118,7 @@ export function ClientePage() {
           ) : (
             <div className="status-flow">
               <article className="status-step">
-                <strong>{resultado.status}</strong>
+                <strong>{statusLabels[resultado.status] ?? resultado.status}</strong>
                 <p>Status atual do atendimento.</p>
               </article>
 

@@ -42,9 +42,16 @@ Plataforma de gestão de assistência técnica construída com Node.js, React e 
 
 	npm run prisma:generate --workspace repairatech-api
 
-6. Suba a aplicação:
+6. Crie as tabelas no banco (sincroniza o schema com o MySQL):
+
+	npm run prisma:push --workspace repairatech-api
+
+7. Suba a aplicação:
 
 	npm run dev
+
+> Usuários de demonstração para o login interno:
+> `admin@repairatech.local / admin123`, `atendente@repairatech.local / atendente123`, `tecnico@repairatech.local / tecnico123`.
 
 ## Integração
 

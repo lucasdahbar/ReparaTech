@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { RefreshCw, Pencil, Trash2, FileText, Plus, Users, Smartphone } from 'lucide-react';
 
 import {
   atualizarCliente,
@@ -180,7 +181,9 @@ export function AtendentePage() {
   };
 
   const excluirCliente = async (cliente: Cliente) => {
-    const confirmado = window.confirm(`Deseja remover o cliente ${cliente.nome}?`);
+    const confirmado = window.confirm(
+      `Deseja remover o cliente ${cliente.nome}?\n\nAtenção: clientes com aparelhos ou ordens de serviço vinculados não podem ser removidos.`
+    );
 
     if (!confirmado) {
       return;
@@ -365,6 +368,7 @@ export function AtendentePage() {
 
           <div className="form-actions">
             <button type="submit" className="button-primary" disabled={salvando}>
+              {!salvando ? <Plus size={15} strokeWidth={2.2} /> : null}
               {salvando ? 'Salvando...' : clienteSelecionadoId ? 'Atualizar cliente' : 'Cadastrar cliente'}
             </button>
             <span className="helper-text">Os campos com * são obrigatórios para o primeiro cadastro.</span>
@@ -381,6 +385,7 @@ export function AtendentePage() {
               <h3>Clientes cadastrados</h3>
             </div>
             <button type="button" className="button-secondary" onClick={() => void carregarClientes()}>
+              <RefreshCw size={14} strokeWidth={2} />
               Recarregar
             </button>
           </div>
@@ -418,9 +423,11 @@ export function AtendentePage() {
                       <td>
                         <div className="action-group">
                           <button type="button" className="button-secondary" onClick={() => editarCliente(cliente)}>
+                            <Pencil size={14} strokeWidth={2} />
                             Editar
                           </button>
                           <button type="button" className="button-danger" onClick={() => void excluirCliente(cliente)}>
+                            <Trash2 size={14} strokeWidth={2} />
                             Excluir
                           </button>
                         </div>
@@ -429,9 +436,13 @@ export function AtendentePage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+      </section>
 
-              <section className="two-column-grid">
-                <form className="panel-card form-card" onSubmit={manipularEnvioOrdemServico}>
+      <section>
+        <form className="panel-card form-card" onSubmit={manipularEnvioOrdemServico}>
                   <div className="section-heading">
                     <div>
                       <span className="eyebrow">Ordem de Serviço</span>
@@ -507,15 +518,6 @@ export function AtendentePage() {
                     <div className="feedback success">Protocolo gerado: {protocoloOrdemServico}</div>
                   ) : null}
                 </form>
-
-                <section className="panel-card callout-card">
-                  <span className="status-pill">RF03</span>
-                  <h3>OS vinculada ao cliente e aparelho</h3>
-                  <p>
-                    Selecione um cliente para carregar apenas os aparelhos dele, descreva o defeito relatado e
-                    confirme a abertura da ordem de serviço.
-                  </p>
-                </section>
               </section>
 
               <section className="panel-card list-card">
@@ -525,6 +527,7 @@ export function AtendentePage() {
                     <h3>OS abertas</h3>
                   </div>
                   <button type="button" className="button-secondary" onClick={() => void carregarOrdensServico()}>
+                    <RefreshCw size={14} strokeWidth={2} />
                     Recarregar
                   </button>
                 </div>
@@ -571,6 +574,7 @@ export function AtendentePage() {
                             </td>
                             <td>
                               <button type="button" className="button-secondary" onClick={() => void baixarComprovante(ordem)}>
+                                <FileText size={14} strokeWidth={2} />
                                 Comprovante
                               </button>
                             </td>
@@ -676,6 +680,7 @@ export function AtendentePage() {
                       <h3>{clienteSelecionadoId ? 'Aparelhos do cliente selecionado' : 'Todos os aparelhos cadastrados'}</h3>
                     </div>
                     <button type="button" className="button-secondary" onClick={() => void carregarAparelhos()}>
+                      <RefreshCw size={14} strokeWidth={2} />
                       Recarregar
                     </button>
                   </div>
@@ -716,10 +721,6 @@ export function AtendentePage() {
                     </div>
                   )}
                 </section>
-              </section>
-            </div>
-          )}
-        </section>
       </section>
     </div>
   );

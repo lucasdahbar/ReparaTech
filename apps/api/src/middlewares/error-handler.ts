@@ -41,6 +41,12 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
         mensagem: 'Registro não encontrado.'
       });
     }
+
+    if (error.code === 'P2003') {
+      return res.status(409).json({
+        mensagem: 'Não é possível remover: existem aparelhos ou ordens de serviço vinculados a este registro.'
+      });
+    }
   }
 
   if (error instanceof SyntaxError && 'body' in error) {

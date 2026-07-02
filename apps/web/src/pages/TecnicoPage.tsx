@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { RefreshCw, Pencil, Trash2, Plus, PackagePlus, ArrowRight } from 'lucide-react';
 
 import {
   atualizarPeca,
@@ -376,6 +377,7 @@ export function TecnicoPage() {
 
           <div className="form-actions">
             <button type="submit" className="button-primary" disabled={salvandoPeca}>
+              {!salvandoPeca ? <Plus size={15} strokeWidth={2.2} /> : null}
               {salvandoPeca ? 'Salvando...' : pecaSelecionadaId ? 'Atualizar peça' : 'Cadastrar peça'}
             </button>
             <span className="helper-text">Quantidade negativa e custo zerado são bloqueados pela API.</span>
@@ -389,6 +391,7 @@ export function TecnicoPage() {
               <h3>Itens em estoque</h3>
             </div>
             <button type="button" className="button-secondary" onClick={() => void carregarDados()}>
+              <RefreshCw size={14} strokeWidth={2} />
               Recarregar
             </button>
           </div>
@@ -426,9 +429,11 @@ export function TecnicoPage() {
                       <td>
                         <div className="action-group">
                           <button type="button" className="button-secondary" onClick={() => editarPeca(peca)}>
+                            <Pencil size={14} strokeWidth={2} />
                             Editar
                           </button>
                           <button type="button" className="button-danger" onClick={() => void excluirPeca(peca)}>
+                            <Trash2 size={14} strokeWidth={2} />
                             Excluir
                           </button>
                         </div>
@@ -450,6 +455,7 @@ export function TecnicoPage() {
               <h3>Ordens de serviço</h3>
             </div>
             <button type="button" className="button-secondary" onClick={() => void carregarDados()}>
+              <RefreshCw size={14} strokeWidth={2} />
               Recarregar
             </button>
           </div>
@@ -568,6 +574,7 @@ export function TecnicoPage() {
 
                   <div className="form-actions">
                     <button type="submit" className="button-primary" disabled={atualizandoStatus || !novoStatus}>
+                      {!atualizandoStatus ? <ArrowRight size={15} strokeWidth={2.2} /> : null}
                       {atualizandoStatus ? 'Atualizando...' : 'Atualizar status'}
                     </button>
                     <span className="helper-text">As transições são validadas pela API.</span>
@@ -632,6 +639,7 @@ export function TecnicoPage() {
 
           <div className="form-actions">
             <button type="submit" className="button-primary" disabled={lancandoPeca || pecas.length === 0 || ordens.length === 0}>
+              {!lancandoPeca ? <PackagePlus size={15} strokeWidth={2.2} /> : null}
               {lancandoPeca ? 'Lançando...' : 'Adicionar peça na OS'}
             </button>
             <span className="helper-text">A API valida o saldo e registra a movimentação de saída automaticamente.</span>
