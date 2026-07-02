@@ -25,12 +25,13 @@ Plataforma de gestão de assistência técnica construída com Node.js, React e 
 - Prisma
 - MySQL
 - TypeScript
+- Docker
 
 ## Como executar
 
 1. Copie o arquivo `.env.example` para `.env` na raiz do projeto.
 2. Ajuste `DATABASE_URL` se necessário.
-3. Inicie o MySQL local:
+3. Inicie o MySQL local com o docker:
 
 	docker compose up -d
 
