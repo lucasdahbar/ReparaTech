@@ -498,6 +498,89 @@ svg {
   gap: 28px;
 }
 
+/* ============ Gavetas ============ */
+.drawer-card {
+  display: grid;
+  gap: 16px;
+}
+
+.drawer-card > summary {
+  list-style: none;
+}
+
+.drawer-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drawer-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 18px;
+  color: var(--texto);
+  text-align: left;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+  background: var(--fundo-2);
+  cursor: pointer;
+  transition: border-color var(--t-rapida), background var(--t-rapida);
+}
+
+.drawer-trigger:hover {
+  border-color: var(--borda-forte);
+  background: var(--fundo-3);
+}
+
+.drawer-title {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.drawer-title strong {
+  font-size: 1.04rem;
+  line-height: 1.2;
+}
+
+.drawer-title small {
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+.drawer-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-sm);
+  background: var(--fundo);
+  flex: 0 0 auto;
+  transition: transform var(--t-rapida), border-color var(--t-rapida);
+}
+
+.drawer-icon::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--texto-suave);
+  border-bottom: 2px solid var(--texto-suave);
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.drawer-card[open] .drawer-icon {
+  border-color: var(--acento-borda);
+  transform: rotate(180deg);
+}
+
+.drawer-content {
+  display: grid;
+  gap: 22px;
+}
+
 /* ============ Cards base ============ */
 .panel-card,
 .hero-card,

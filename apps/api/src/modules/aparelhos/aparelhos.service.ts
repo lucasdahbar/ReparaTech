@@ -4,7 +4,7 @@ import type { z } from 'zod';
 import { prisma } from '../../lib/prisma';
 import { ApiError } from '../../shared/api-error';
 import { buscarClientePorId } from '../clientes/clientes.repository';
-import { criarAparelho, excluirAparelho, listarAparelhos, atualizarAparelho, buscarAparelhoPorId } from './aparelhos.repository';
+import { criarAparelho, listarAparelhos, atualizarAparelho, buscarAparelhoPorId } from './aparelhos.repository';
 import { aparelhoCreateSchema, aparelhoUpdateSchema } from './aparelhos.schemas';
 
 type AparelhoCreateInput = z.infer<typeof aparelhoCreateSchema>;
@@ -142,5 +142,32 @@ export const removerAparelhoServico = async (id: string) => {
     throw new ApiError(404, 'Aparelho não encontrado.');
   }
 
-  await excluirAparelho(id);
+  const ordens = await prisma.ordemServico.findMany({
+    where: {
+      aparelhoId: id
+    },
+    select: {
+      status: true
+    }
+  });
+
+  const possuiOrdemEmAndamento = ordens.some((ordem) => ordem.status !== 'FINALIZADA');
+
+  if (possuiOrdemEmAndamento) {
+    throw new ApiError(409, 'Não é possível remover aparelho com ordem de serviço em andamento.');
+  }
+
+  await prisma.$transaction(async (transacao) => {
+    await transacao.ordemServico.deleteMany({
+      where: {
+        aparelhoId: id
+      }
+    });
+
+    await transacao.aparelho.delete({
+      where: {
+        id
+      }
+    });
+  });
 };

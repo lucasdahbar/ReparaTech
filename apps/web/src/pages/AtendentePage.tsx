@@ -10,6 +10,7 @@ import {
   listarAparelhos,
   listarClientes,
   listarOrdensServico,
+  removerAparelho,
   removerCliente
 } from '../lib/api';
 import type { Aparelho, AparelhoFormulario, Cliente, ClienteFormulario, OrdemServico, OrdemServicoFormulario } from '../types';
@@ -182,7 +183,7 @@ export function AtendentePage() {
 
   const excluirCliente = async (cliente: Cliente) => {
     const confirmado = window.confirm(
-      `Deseja remover o cliente ${cliente.nome}?\n\nAtenção: clientes com aparelhos ou ordens de serviço vinculados não podem ser removidos.`
+      `Deseja remover o cliente ${cliente.nome}?\n\nClientes com OS em andamento não podem ser removidos. OS finalizadas serão apagadas junto com os vínculos do cliente.`
     );
 
     if (!confirmado) {
@@ -225,6 +226,31 @@ export function AtendentePage() {
     }
   };
 
+  const excluirAparelho = async (aparelho: Aparelho) => {
+    const confirmado = window.confirm(
+      `Deseja remover o aparelho ${aparelho.marca} ${aparelho.modelo}?\n\nAparelhos com OS em andamento não podem ser removidos.`
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    setSalvandoAparelho(true);
+    setErro(null);
+    setMensagem(null);
+
+    try {
+      await removerAparelho(aparelho.id);
+      setMensagem('Aparelho removido com sucesso.');
+      await carregarAparelhos();
+      await carregarOrdensServico();
+    } catch (erroRemocao) {
+      setErro(erroRemocao instanceof Error ? erroRemocao.message : 'Não foi possível remover o aparelho.');
+    } finally {
+      setSalvandoAparelho(false);
+    }
+  };
+
   const aparelhosDoClienteSelecionado = clienteSelecionadoId
     ? aparelhos.filter((aparelho) => aparelho.clienteId === clienteSelecionadoId)
     : aparelhos;
@@ -257,6 +283,10 @@ export function AtendentePage() {
     setErro(null);
 
     try {
+      if (ordem.status !== 'FINALIZADA') {
+        throw new Error('O comprovante só pode ser gerado para ordens de serviço entregues.');
+      }
+
       const arquivo = await baixarComprovanteOrdemServico(ordem.id);
       const url = URL.createObjectURL(arquivo);
       const link = document.createElement('a');
@@ -301,8 +331,19 @@ export function AtendentePage() {
         </div>
       </section>
 
-      <section className="two-column-grid">
-        <form className="panel-card form-card" onSubmit={manipularEnvio}>
+      <details className="drawer-card">
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Atendimento</span>
+            <strong>Clientes</strong>
+            <small>Cadastro e consulta da base de clientes.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
+          <section className="two-column-grid">
+            <form className="panel-card form-card" onSubmit={manipularEnvio}>
           <div className="section-heading">
             <div>
               <span className="eyebrow">Novo cliente</span>
@@ -439,10 +480,23 @@ export function AtendentePage() {
             </div>
           )}
         </section>
-      </section>
+          </section>
+        </div>
+      </details>
 
-      <section>
-        <form className="panel-card form-card" onSubmit={manipularEnvioOrdemServico}>
+      <details className="drawer-card" style={{ order: 3 }}>
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Ordem de Serviço</span>
+            <strong>Ordens de Serviço</strong>
+            <small>Abertura de OS e acompanhamento dos protocolos gerados.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
+          <section>
+            <form className="panel-card form-card" onSubmit={manipularEnvioOrdemServico}>
                   <div className="section-heading">
                     <div>
                       <span className="eyebrow">Ordem de Serviço</span>
@@ -517,10 +571,10 @@ export function AtendentePage() {
                   {protocoloOrdemServico ? (
                     <div className="feedback success">Protocolo gerado: {protocoloOrdemServico}</div>
                   ) : null}
-                </form>
-              </section>
+            </form>
+          </section>
 
-              <section className="panel-card list-card">
+          <section className="panel-card list-card">
                 <div className="section-heading">
                   <div>
                     <span className="eyebrow">Ordens de Serviço</span>
@@ -573,7 +627,17 @@ export function AtendentePage() {
                               <small>Data de entrada</small>
                             </td>
                             <td>
-                              <button type="button" className="button-secondary" onClick={() => void baixarComprovante(ordem)}>
+                              <button
+                                type="button"
+                                className="button-secondary"
+                                onClick={() => void baixarComprovante(ordem)}
+                                disabled={ordem.status !== 'FINALIZADA'}
+                                title={
+                                  ordem.status === 'FINALIZADA'
+                                    ? 'Baixar comprovante'
+                                    : 'Disponível apenas para OS entregue'
+                                }
+                              >
                                 <FileText size={14} strokeWidth={2} />
                                 Comprovante
                               </button>
@@ -584,8 +648,21 @@ export function AtendentePage() {
                     </table>
                   </div>
                 )}
-              </section>
+          </section>
+        </div>
+      </details>
 
+      <details className="drawer-card" style={{ order: 2 }}>
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Aparelhos</span>
+            <strong>Aparelhos</strong>
+            <small>Vínculo dos equipamentos antes da abertura da OS.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
               <section className="two-column-grid">
                 <form className="panel-card form-card" onSubmit={manipularEnvioAparelho}>
                   <div className="section-heading">
@@ -697,6 +774,7 @@ export function AtendentePage() {
                             <th>Cliente</th>
                             <th>Aparelho</th>
                             <th>Identificação</th>
+                            <th>Ações</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -714,6 +792,12 @@ export function AtendentePage() {
                                 <strong>{aparelho.numeroSerie ?? 'Sem serial'}</strong>
                                 <small>{aparelho.imei ?? 'Sem IMEI'}</small>
                               </td>
+                              <td>
+                                <button type="button" className="button-danger" onClick={() => void excluirAparelho(aparelho)}>
+                                  <Trash2 size={14} strokeWidth={2} />
+                                  Excluir
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -721,7 +805,9 @@ export function AtendentePage() {
                     </div>
                   )}
                 </section>
-      </section>
+              </section>
+        </div>
+      </details>
     </div>
   );
 }

@@ -53,6 +53,14 @@ type RespostaPeca = {
 
 type RespostaLogin = Sessao & RespostaMensagem;
 
+type RespostaErroApi = {
+  mensagem?: string;
+  detalhes?: {
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[] | undefined>;
+  };
+};
+
 export function obterSessaoSalva(): Sessao | null {
   const valor = window.localStorage.getItem(STORAGE_KEY);
 
@@ -86,6 +94,23 @@ function montarHeaders(headers?: HeadersInit) {
   };
 }
 
+function montarMensagemErro(payload: RespostaErroApi | null) {
+  const mensagensCampos = payload?.detalhes?.fieldErrors
+    ? Object.entries(payload.detalhes.fieldErrors).flatMap(([campo, mensagens]) =>
+        (mensagens ?? []).map((mensagem) => `${campo}: ${mensagem}`)
+      )
+    : [];
+
+  const mensagensFormulario = payload?.detalhes?.formErrors ?? [];
+  const detalhes = [...mensagensCampos, ...mensagensFormulario];
+
+  if (detalhes.length > 0) {
+    return detalhes.join(' ');
+  }
+
+  return payload?.mensagem ?? 'Não foi possível comunicar com a API do ReparaTech.';
+}
+
 async function requisicao<T>(caminho: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${caminho}`, {
     ...options,
@@ -95,7 +120,7 @@ async function requisicao<T>(caminho: string, options: RequestInit = {}): Promis
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(payload?.mensagem ?? 'Não foi possível comunicar com a API do ReparaTech.');
+    throw new Error(montarMensagemErro(payload as RespostaErroApi | null));
   }
 
   return payload as T;
@@ -108,7 +133,7 @@ async function requisicaoArquivo(caminho: string): Promise<Blob> {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(payload?.mensagem ?? 'Nao foi possivel baixar o arquivo.');
+    throw new Error(payload?.mensagem ?? 'Não foi possível baixar o arquivo.');
   }
 
   return response.blob();
@@ -160,6 +185,12 @@ export async function cadastrarAparelho(aparelho: AparelhoFormulario) {
   return requisicao<RespostaAparelho & RespostaMensagem>('/aparelhos', {
     method: 'POST',
     body: JSON.stringify(aparelho)
+  });
+}
+
+export async function removerAparelho(id: string) {
+  return requisicao<RespostaMensagem>(`/aparelhos/${id}`, {
+    method: 'DELETE'
   });
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
   Wrench,
@@ -14,20 +14,24 @@ import { AtendentePage } from './pages/AtendentePage';
 import { ClientePage } from './pages/ClientePage';
 import { LoginPage } from './pages/LoginPage';
 import { TecnicoPage } from './pages/TecnicoPage';
-import type { Sessao } from './types';
+import type { PerfilUsuario, Sessao } from './types';
 
 type LayoutPrincipalProps = {
   sessao: Sessao | null;
   onLogout: () => void;
 };
 
+type AreaSistema = 'cliente' | 'atendente' | 'tecnico';
+
 type RotaProtegidaProps = {
   sessao: Sessao | null;
+  area: AreaSistema;
   children: JSX.Element;
 };
 
 const navegacao = [
   {
+    area: 'atendente',
     to: '/atendente',
     icone: ClipboardList,
     label: 'Atendente',
@@ -36,6 +40,7 @@ const navegacao = [
     subtitulo: 'Cadastre clientes, registre aparelhos e abra ordens de serviço.'
   },
   {
+    area: 'tecnico',
     to: '/tecnico',
     icone: Wrench,
     label: 'Técnico',
@@ -44,18 +49,43 @@ const navegacao = [
     subtitulo: 'Controle o estoque de peças e conduza o ciclo de vida das OS.'
   },
   {
+    area: 'cliente',
     to: '/cliente',
     icone: Search,
     label: 'Cliente',
     resumo: 'Consulta pública',
     titulo: 'Consulta de status',
-    subtitulo: 'Acompanhe o andamento de uma ordem de serviço sem login.'
+    subtitulo: 'Acompanhe o andamento de uma ordem de serviço.'
   }
 ] as const;
 
-function RotaProtegida({ sessao, children }: RotaProtegidaProps) {
+const permissoes: Record<PerfilUsuario, AreaSistema[]> = {
+  CLIENTE: ['cliente'],
+  ATENDENTE: ['cliente', 'atendente'],
+  TECNICO: ['cliente', 'tecnico'],
+  ADMIN: ['cliente', 'atendente', 'tecnico']
+};
+
+function areasPermitidas(sessao: Sessao | null) {
+  return sessao ? permissoes[sessao.usuario.perfil] : ['cliente'];
+}
+
+function rotaInicial(sessao: Sessao | null) {
+  const areas = areasPermitidas(sessao);
+  return navegacao.find((item) => areas.includes(item.area))?.to ?? '/cliente';
+}
+
+function podeAcessarArea(sessao: Sessao | null, area: AreaSistema) {
+  return areasPermitidas(sessao).includes(area);
+}
+
+function RotaProtegida({ sessao, area, children }: RotaProtegidaProps) {
   if (!sessao) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!podeAcessarArea(sessao, area)) {
+    return <Navigate to={rotaInicial(sessao)} replace />;
   }
 
   return children;
@@ -124,6 +154,7 @@ function ConteudoAnimado() {
 function LayoutPrincipal({ sessao, onLogout }: LayoutPrincipalProps) {
   const { pathname } = useLocation();
   const rotaAtual = navegacao.find((item) => pathname.startsWith(item.to)) ?? navegacao[0];
+  const navegacaoVisivel = navegacao.filter((item) => podeAcessarArea(sessao, item.area));
 
   return (
     <div className="shell">
@@ -140,7 +171,7 @@ function LayoutPrincipal({ sessao, onLogout }: LayoutPrincipalProps) {
 
         <nav className="nav-list">
           <span className="nav-label">Áreas</span>
-          {navegacao.map((item) => {
+          {navegacaoVisivel.map((item) => {
             const Icone = item.icone;
             return (
               <NavLink
@@ -210,21 +241,23 @@ function LayoutPrincipal({ sessao, onLogout }: LayoutPrincipalProps) {
 
 export function App() {
   const [sessao, setSessao] = useState<Sessao | null>(() => obterSessaoSalva());
+  const navigate = useNavigate();
 
   const sair = () => {
     encerrarSessao();
     setSessao(null);
+    navigate('/login', { replace: true });
   };
 
   return (
     <Routes>
-      <Route path="/login" element={sessao ? <Navigate to="/atendente" replace /> : <LoginPage onLogin={setSessao} />} />
+      <Route path="/login" element={sessao ? <Navigate to={rotaInicial(sessao)} replace /> : <LoginPage onLogin={setSessao} />} />
       <Route element={<LayoutPrincipal sessao={sessao} onLogout={sair} />}>
-        <Route path="/" element={<Navigate to="/atendente" replace />} />
+        <Route path="/" element={<Navigate to={sessao ? rotaInicial(sessao) : '/login'} replace />} />
         <Route
           path="/atendente"
           element={
-            <RotaProtegida sessao={sessao}>
+            <RotaProtegida sessao={sessao} area="atendente">
               <AtendentePage />
             </RotaProtegida>
           }
@@ -232,7 +265,7 @@ export function App() {
         <Route
           path="/tecnico"
           element={
-            <RotaProtegida sessao={sessao}>
+            <RotaProtegida sessao={sessao} area="tecnico">
               <TecnicoPage />
             </RotaProtegida>
           }

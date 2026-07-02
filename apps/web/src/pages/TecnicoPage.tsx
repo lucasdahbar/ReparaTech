@@ -262,7 +262,7 @@ export function TecnicoPage() {
       <section className="hero-card">
         <div>
           <span className="eyebrow">Técnico</span>
-          <h2>Estoque e uso de peças</h2>
+          <h2>Ciclo da OS e uso de peças</h2>
           <p>
             Controle as peças disponíveis, ajuste saldo e preço, e lance o consumo diretamente na ordem de
             serviço com baixa automática de estoque.
@@ -295,8 +295,19 @@ export function TecnicoPage() {
         </section>
       )}
 
-      <section className="two-column-grid">
-        <form className="panel-card form-card" onSubmit={salvarPeca}>
+      <details className="drawer-card" style={{ order: 4 }}>
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Estoque</span>
+            <strong>Estoque de peças</strong>
+            <small>Cadastro, edição e consulta dos itens disponíveis.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
+          <section className="two-column-grid">
+            <form className="panel-card form-card" onSubmit={salvarPeca}>
           <div className="section-heading">
             <div>
               <span className="eyebrow">Estoque</span>
@@ -445,10 +456,23 @@ export function TecnicoPage() {
             </div>
           )}
         </section>
-      </section>
+          </section>
+        </div>
+      </details>
 
-      <section className="two-column-grid">
-        <section className="panel-card list-card">
+      <details className="drawer-card" style={{ order: 2 }}>
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Ciclo da OS</span>
+            <strong>Ordens de Serviço</strong>
+            <small>Busca, seleção e alteração de status da OS.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
+          <section className="two-column-grid">
+            <section className="panel-card list-card">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Ciclo da OS</span>
@@ -584,10 +608,23 @@ export function TecnicoPage() {
             </>
           )}
         </form>
-      </section>
+          </section>
+        </div>
+      </details>
 
-      <section className="two-column-grid">
-        <form className="panel-card form-card" onSubmit={lancarPecaNaOS}>
+      <details className="drawer-card" style={{ order: 3 }}>
+        <summary className="drawer-trigger">
+          <span className="drawer-title">
+            <span className="eyebrow">Uso na OS</span>
+            <strong>Peças usadas na OS</strong>
+            <small>Lançamento e conferência das peças consumidas.</small>
+          </span>
+          <span className="drawer-icon" aria-hidden="true" />
+        </summary>
+
+        <div className="drawer-content">
+          <section className="two-column-grid">
+            <form className="panel-card form-card" onSubmit={lancarPecaNaOS}>
           <div className="section-heading">
             <div>
               <span className="eyebrow">Ordem de serviço</span>
@@ -703,7 +740,9 @@ export function TecnicoPage() {
             </div>
           )}
         </section>
-      </section>
+          </section>
+        </div>
+      </details>
     </div>
   );
 }

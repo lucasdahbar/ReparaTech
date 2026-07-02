@@ -17,7 +17,7 @@ export const exigirAutenticacao = (perfisPermitidos: PerfilInterno[] = ['ADMIN',
 
     const usuario = verificarToken(token);
 
-    if (!perfisPermitidos.includes(usuario.perfil)) {
+    if (usuario.perfil === 'CLIENTE' || !perfisPermitidos.includes(usuario.perfil)) {
       return next(new ApiError(403, 'Perfil sem permissao para acessar esta area.'));
     }
 

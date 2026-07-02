@@ -13,7 +13,7 @@ export type UsuarioAutenticado = {
   id: string;
   nome: string;
   email: string;
-  perfil: Exclude<PerfilUsuario, 'CLIENTE'>;
+  perfil: PerfilUsuario;
 };
 
 type TokenPayload = Omit<UsuarioAutenticado, 'id' | 'perfil'> & {
@@ -23,6 +23,34 @@ type TokenPayload = Omit<UsuarioAutenticado, 'id' | 'perfil'> & {
 };
 
 const usuariosDemo: Array<UsuarioAutenticado & { senha: string }> = [
+  {
+    id: 'demo-cliente-com',
+    nome: 'Cliente',
+    email: 'cliente@demo.com',
+    senha: 'cliente123',
+    perfil: 'CLIENTE'
+  },
+  {
+    id: 'demo-admin-com',
+    nome: 'Administrador',
+    email: 'admin@demo.com',
+    senha: 'admin123',
+    perfil: 'ADMIN'
+  },
+  {
+    id: 'demo-atendente-com',
+    nome: 'Atendente',
+    email: 'atendente@demo.com',
+    senha: 'atendente123',
+    perfil: 'ATENDENTE'
+  },
+  {
+    id: 'demo-tecnico-com',
+    nome: 'Tecnico',
+    email: 'tecnico@demo.com',
+    senha: 'tecnico123',
+    perfil: 'TECNICO'
+  },
   {
     id: 'demo-admin',
     nome: 'Administrador',
@@ -90,7 +118,7 @@ export const verificarToken = (token: string): UsuarioAutenticado => {
   const partes = token.split('.');
 
   if (partes.length !== 3) {
-    throw new ApiError(401, 'Sessao invalida.');
+    throw new ApiError(401, 'Sessão inválida.');
   }
 
   const header = partes[0];
@@ -98,23 +126,23 @@ export const verificarToken = (token: string): UsuarioAutenticado => {
   const assinatura = partes[2];
 
   if (!header || !body || !assinatura) {
-    throw new ApiError(401, 'Sessao invalida.');
+    throw new ApiError(401, 'Sessão inválida.');
   }
 
   const assinaturaEsperada = base64Url(createHmac('sha256', env.AUTH_SECRET).update(`${header}.${body}`).digest());
 
   if (!compararSeguro(assinatura, assinaturaEsperada)) {
-    throw new ApiError(401, 'Sessao invalida.');
+    throw new ApiError(401, 'Sessão inválida.');
   }
 
   const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as TokenPayload;
 
   if (payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new ApiError(401, 'Sessao expirada.');
+    throw new ApiError(401, 'Sessão expirada.');
   }
 
   if (payload.perfil === 'CLIENTE') {
-    throw new ApiError(403, 'Cliente nao possui acesso interno.');
+    throw new ApiError(403, 'Cliente não possui acesso interno.');
   }
 
   return {

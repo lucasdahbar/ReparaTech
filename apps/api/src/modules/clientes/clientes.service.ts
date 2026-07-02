@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 
+import { prisma } from '../../lib/prisma';
 import { ApiError } from '../../shared/api-error';
 import {
   atualizarCliente,
@@ -7,7 +8,6 @@ import {
   buscarClientePorEmail,
   buscarClientePorId,
   criarCliente,
-  excluirCliente,
   listarClientes as listarClientesRepositorio
 } from './clientes.repository';
 import { clienteCreateSchema, clienteUpdateSchema } from './clientes.schemas';
@@ -88,5 +88,38 @@ export const removerCliente = async (id: string) => {
     throw new ApiError(404, 'Cliente não encontrado.');
   }
 
-  await excluirCliente(id);
+  const ordens = await prisma.ordemServico.findMany({
+    where: {
+      clienteId: id
+    },
+    select: {
+      status: true
+    }
+  });
+
+  const possuiOrdemEmAndamento = ordens.some((ordem) => ordem.status !== 'FINALIZADA');
+
+  if (possuiOrdemEmAndamento) {
+    throw new ApiError(409, 'Não é possível remover cliente com ordem de serviço em andamento.');
+  }
+
+  await prisma.$transaction(async (transacao) => {
+    await transacao.ordemServico.deleteMany({
+      where: {
+        clienteId: id
+      }
+    });
+
+    await transacao.aparelho.deleteMany({
+      where: {
+        clienteId: id
+      }
+    });
+
+    await transacao.cliente.delete({
+      where: {
+        id
+      }
+    });
+  });
 };

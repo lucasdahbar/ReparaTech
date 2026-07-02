@@ -3,21 +3,17 @@ import { ApiError } from '../../shared/api-error';
 
 const statusLabels: Record<string, string> = {
   ABERTA: 'Aberta',
-  EM_ORCAMENTO: 'Em Orcamento',
-  AGUARDANDO_PECAS: 'Aguardando Pecas',
-  EM_MANUTENCAO: 'Em Manutencao',
+  EM_ORCAMENTO: 'Em Orçamento',
+  AGUARDANDO_PECAS: 'Aguardando Peças',
+  EM_MANUTENCAO: 'Em Manutenção',
   PRONTA_PARA_RETIRADA: 'Pronta',
   FINALIZADA: 'Entregue'
 };
 
-const limparTextoPdf = (texto: string) =>
-  texto
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\x20-\x7E]/g, '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
+const textoPdf = (texto: string) => {
+  const textoWinAnsi = texto.replace(/[^\x09\x0a\x0d\x20-\xff]/g, '');
+  return `<${Buffer.from(textoWinAnsi, 'latin1').toString('hex').toUpperCase()}>`;
+};
 
 const formatarData = (data: Date) =>
   new Intl.DateTimeFormat('pt-BR', {
@@ -59,10 +55,10 @@ const montarPdf = (linhas: string[]) => {
     'BT',
     '/F1 18 Tf',
     '50 790 Td',
-    `(ReparaTech - Comprovante de Ordem de Servico) Tj`,
+    `${textoPdf('ReparaTech - Comprovante de Ordem de Serviço')} Tj`,
     '/F1 10 Tf',
     '0 -28 Td',
-    ...linhas.flatMap((linha) => [`(${limparTextoPdf(linha)}) Tj`, '0 -16 Td']),
+    ...linhas.flatMap((linha) => [`${textoPdf(linha)} Tj`, '0 -16 Td']),
     'ET'
   ].join('\n');
 
@@ -70,7 +66,7 @@ const montarPdf = (linhas: string[]) => {
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
     `<< /Length ${Buffer.byteLength(conteudo, 'latin1')} >>\nstream\n${conteudo}\nendstream`
   ];
 
@@ -111,12 +107,16 @@ export const gerarComprovanteOrdemServico = async (ordemId: string) => {
   });
 
   if (!ordem) {
-    throw new ApiError(404, 'Ordem de servico nao encontrada.');
+    throw new ApiError(404, 'Ordem de serviço não encontrada.');
+  }
+
+  if (ordem.status !== 'FINALIZADA') {
+    throw new ApiError(400, 'O comprovante só pode ser gerado para ordens de serviço entregues.');
   }
 
   const totalPecas = ordem.pecas.reduce((total, item) => total + Number(item.valorUnitario) * item.quantidade, 0);
   const linhas = [
-    `Numero da OS: ${ordem.numero}`,
+    `Número da OS: ${ordem.numero}`,
     `Cliente: ${ordem.cliente.nome}`,
     `Aparelho: ${ordem.aparelho.marca} ${ordem.aparelho.modelo}`,
     `Marca: ${ordem.aparelho.marca}`,
@@ -124,22 +124,22 @@ export const gerarComprovanteOrdemServico = async (ordemId: string) => {
     `Defeito informado: ${ordem.descricaoEntrada}`,
     `Data de entrada: ${formatarData(ordem.dataAbertura)}`,
     `Status: ${statusLabels[ordem.status] ?? ordem.status}`,
-    `Observacoes: ${ordem.observacaoTecnica ?? 'Sem observacoes registradas.'}`,
+    `Observações: ${ordem.observacaoTecnica ?? 'Sem observações registradas.'}`,
     '',
-    'Pecas utilizadas:'
+    'Peças utilizadas:'
   ].flatMap((linha) => quebrarLinha(linha));
 
   if (ordem.pecas.length === 0) {
-    linhas.push('Nenhuma peca utilizada.');
+    linhas.push('Nenhuma peça utilizada.');
   } else {
     ordem.pecas.forEach((item) => {
       linhas.push(
-        `- ${item.peca.nome} | Quantidade: ${item.quantidade} | Valor unitario: ${formatarMoeda(Number(item.valorUnitario))}`
+        `- ${item.peca.nome} | Quantidade: ${item.quantidade} | Valor unitário: ${formatarMoeda(Number(item.valorUnitario))}`
       );
     });
   }
 
-  linhas.push('', `Total das pecas: ${formatarMoeda(totalPecas)}`);
+  linhas.push('', `Total das peças: ${formatarMoeda(totalPecas)}`);
 
   return {
     arquivo: montarPdf(linhas),

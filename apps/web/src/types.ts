@@ -122,7 +122,7 @@ export type StatusOrdemServicoTecnico =
   | 'PRONTA_PARA_RETIRADA'
   | 'FINALIZADA';
 
-export type PerfilUsuario = 'ADMIN' | 'ATENDENTE' | 'TECNICO';
+export type PerfilUsuario = 'ADMIN' | 'ATENDENTE' | 'TECNICO' | 'CLIENTE';
 
 export type UsuarioSessao = {
   id: string;

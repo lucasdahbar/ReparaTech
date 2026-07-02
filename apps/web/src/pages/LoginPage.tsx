@@ -25,7 +25,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         token: sessao.token
       });
     } catch (erroLogin) {
-      setErro(erroLogin instanceof Error ? erroLogin.message : 'Nao foi possivel realizar o login.');
+      setErro(erroLogin instanceof Error ? erroLogin.message : 'Não foi possível realizar o login.');
     } finally {
       setCarregando(false);
     }
@@ -37,7 +37,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <div>
           <span className="eyebrow">Acesso interno</span>
           <h1>ReparaTech</h1>
-          <p className="helper-text">Entre como administrador, atendente ou tecnico. A consulta do cliente continua publica.</p>
+          <p className="helper-text">Entre como administrador, atendente, técnico ou cliente.</p>
         </div>
 
         <div className="form-grid">
@@ -47,7 +47,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               type="email"
               value={email}
               onChange={(evento) => setEmail(evento.target.value)}
-              placeholder="tecnico@repairatech.local"
+              placeholder="cliente@demo.com"
               required
             />
           </label>
@@ -71,10 +71,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         {erro ? <div className="feedback error">{erro}</div> : null}
 
         <div className="login-demo">
-          <strong>Usuarios demo</strong>
-          <span>admin@repairatech.local / admin123</span>
-          <span>atendente@repairatech.local / atendente123</span>
-          <span>tecnico@repairatech.local / tecnico123</span>
+          <strong>Usuários demo</strong>
+          <span>cliente@demo.com / cliente123</span>
+          <span>atendente@demo.com / atendente123</span>
+          <span>tecnico@demo.com / tecnico123</span>
+          <span>admin@demo.com / admin123</span>
         </div>
       </form>
     </main>

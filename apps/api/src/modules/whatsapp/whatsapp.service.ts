@@ -18,18 +18,18 @@ export const notificarClienteWhatsapp = async (ordemId: string) => {
   });
 
   if (!ordem) {
-    throw new ApiError(404, 'Ordem de servico nao encontrada para notificacao.');
+    throw new ApiError(404, 'Ordem de serviço não encontrada para notificação.');
   }
 
-  const telefone = ordem.cliente.telefone ?? 'telefone-nao-informado';
-  const mensagem = `Ola ${ordem.cliente.nome}, sua OS ${ordem.numero} (${ordem.aparelho.marca} ${ordem.aparelho.modelo}) esta pronta para retirada.`;
+  const telefone = ordem.cliente.telefone ?? 'telefone-não-informado';
+  const mensagem = `Olá ${ordem.cliente.nome}, sua OS ${ordem.numero} (${ordem.aparelho.marca} ${ordem.aparelho.modelo}) está pronta para retirada.`;
   const tentativa = {
     ordemServicoId: ordem.id,
     protocolo: ordem.numero,
     telefone,
     mensagem,
-    statusEnvio: telefone === 'telefone-nao-informado' ? 'FALHA_MOCK' : 'ENVIADO_MOCK',
-    erro: telefone === 'telefone-nao-informado' ? 'Cliente sem telefone cadastrado.' : null,
+    statusEnvio: telefone === 'telefone-não-informado' ? 'FALHA_MOCK' : 'ENVIADO_MOCK',
+    erro: telefone === 'telefone-não-informado' ? 'Cliente sem telefone cadastrado.' : null,
     dataEnvio: new Date().toISOString()
   };
 
