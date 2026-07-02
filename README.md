@@ -1,6 +1,6 @@
 # ReparaTech
 
-Plataforma de gestão de assistência técnica construída com Node.js, React e MySQL.
+Plataforma de gestão de assistência técnica construída com Node.js, React e MySQL (Docker).
 
 ## Escopo do sistema
 
